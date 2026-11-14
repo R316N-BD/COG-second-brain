@@ -64,3 +64,6 @@ __pycache__/
 .github/SUBMISSION-CHECKLIST.md
 .github/SUBMISSION-TEMPLATES.md
 .github/MARKETPLACE.md
+
+# Local Python virtual environments
+.venv/

@@ -9,6 +9,7 @@ from . import cli, memory
 from .nexus_gateway import HermesClient, GatewayError
 from .nexus_browser import DedicatedBrowser
 from .nexus_rich import parse, INSTRUCTIONS
+from .nexus_shell import WindowsShell
 
 def run(data_dir):
     data=cli.init_vault(data_dir)
@@ -26,6 +27,7 @@ def run(data_dir):
     commands=queue.Queue(maxsize=12)
     inbox=queue.Queue(maxsize=1000)
     stop=threading.Event()
+    shell=None
     browser=DedicatedBrowser(data)
     state={"online":False,"busy":False,"pending":False,"uncertain":False,"session":None,"owner":None,
            "reply":"","attached":None}
@@ -90,6 +92,8 @@ def run(data_dir):
     browser_bar=ttk.Frame(browse)
     browser_bar.pack(anchor="w",pady=8)
     ttk.Label(browse,text="After attachment, send a browser task to that profile in Command. Watch the separate browser window.").pack(anchor="w")
+    screenshot_label=ttk.Label(browse)
+    screenshot_label.pack(anchor="w",pady=8)
     search=tk.StringVar()
     scope=tk.StringVar(value="04-projects")
     kbar=ttk.Frame(knowledge)
@@ -132,7 +136,7 @@ def run(data_dir):
                 pass
 
     def put(action,*args):
-        if state["pending"] or (state["busy"] and action!="interrupt"):
+        if state["pending"] or (state["busy"] and action not in {"interrupt","snapshot"}):
             return False
         try:
             commands.put_nowait((action,args))
@@ -199,12 +203,34 @@ def run(data_dir):
         if state["online"] and state["attached"] and messagebox.askyesno("Detach","Disconnect the browser from "+state["attached"]+"?"):
             put("detach",state["attached"])
 
+    def snapshot():
+        if not state["attached"] or not state["online"]:
+            messagebox.showwarning("COG","Attach the dedicated browser first.")
+            return
+        if messagebox.askyesno("Browser screenshot","Save a screenshot of the dedicated browser to the private COG runtime? It may contain sensitive page content."):
+            put("snapshot")
+
+    def enable_shell():
+        nonlocal shell
+        if shell is not None:
+            messagebox.showinfo("COG","Windows shell bridge is already enabled.")
+            return
+        try:
+            candidate=WindowsShell(emit)
+            candidate.start()
+            shell=candidate
+            status.set("Windows shell bridge starting…")
+        except (ValueError,ImportError,OSError) as exc:
+            messagebox.showerror("COG",str(exc))
+
     def button(parent,label,action,side="left"):
         ttk.Button(parent,text=label,command=action).pack(side=side,padx=4)
 
     button(connection,"Connect",connect)
     button(connection,"Refresh",refresh)
     button(connection,"Quick panel",panel.deiconify,"right")
+    if os.name=="nt":
+        button(connection,"Tray + hotkey",enable_shell,"right")
     button(actions,"Send",lambda:send(composer),"right")
     button(actions,"New session",new)
     button(actions,"Interrupt",interrupt)
@@ -212,6 +238,7 @@ def run(data_dir):
     button(mini_bar,"Open workspace",root.deiconify)
     button(browser_bar,"Launch + attach",attach)
     button(browser_bar,"Detach",detach)
+    button(browser_bar,"Capture tab",snapshot)
     button(kbar,"Recall",lambda:put("recall",search.get(),scope.get()))
     button(kbar,"Refresh index",lambda:put("index"))
     picker.bind("<<ComboboxSelected>>",lambda _:refresh())
@@ -259,6 +286,8 @@ def run(data_dir):
                     if result.get("connected") is not False:
                         raise GatewayError("Browser detach unconfirmed.")
                     emit("browser",(None,None))
+                elif action=="snapshot":
+                    emit("snapshot",browser.snapshot())
                 elif action=="recall":
                     emit("notes",memory.search(data,args[0],scope=args[1]))
                 elif action=="index":
@@ -366,6 +395,8 @@ def run(data_dir):
             render(state["reply"])
             state["busy"]=False
             status.set("Turn ended — "+str(payload.get("status") or "review result"))
+            if shell is not None:
+                shell.notify()
         elif kind in {"tool.start","tool.complete","browser.progress","approval.request","clarify.request"}:
             status.set("Hermes: "+kind+" "+str(payload.get("name",""))[:80])
 
@@ -406,6 +437,29 @@ def run(data_dir):
             elif kind=="browser":
                 state["attached"]=value[0]
                 browser_label.set(f"Attached to {value[0]} on loopback port {value[1]} — watch separate window." if value[0] else "Detached. Close the dedicated window.")
+            elif kind=="snapshot":
+                try:
+                    image=tk.PhotoImage(file=value)
+                    scale=max(1,(image.width()+699)//700,(image.height()+379)//380)
+                    screenshot_label.image=image.subsample(scale,scale)
+                    screenshot_label.configure(image=screenshot_label.image)
+                    browser_label.set("Screenshot saved privately: "+value)
+                except tk.TclError:
+                    browser_label.set("Screenshot saved privately: "+value)
+            elif kind=="shell":
+                if value=="quick":
+                    panel.deiconify()
+                    panel.lift()
+                    quick.focus_set()
+                elif value=="show":
+                    root.deiconify()
+                    root.lift()
+                elif value=="exit":
+                    close()
+                    if stop.is_set():
+                        return
+            elif kind=="shell-status":
+                status.set(value)
             elif kind=="notes":
                 write(notes,json.dumps(value,indent=2,ensure_ascii=False),True)
             elif kind=="error":
@@ -422,6 +476,8 @@ def run(data_dir):
         if (state["busy"] or state["attached"]) and not messagebox.askyesno("COG","A turn or browser may still be active in Hermes. Closing Nexus will not cancel or detach it. Close anyway?"):
             return
         stop.set()
+        if shell is not None:
+            shell.close()
         root.destroy()
 
     root.protocol("WM_DELETE_WINDOW",close)

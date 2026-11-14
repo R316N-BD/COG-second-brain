@@ -12,6 +12,9 @@
 
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
 # ── Configuration ────────────────────────────────────────────────────
 REMOTE_NAME="cog-upstream"
 REMOTE_URL="https://github.com/huytieu/COG-second-brain.git"
@@ -19,25 +22,20 @@ BRANCH="main"
 VERSION_FILE="COG-VERSION"
 VALIDATOR_SCRIPT="scripts/validate-agent-surface.sh"
 
-# Framework files — these are safe to overwrite (your content is never in this list)
+# Allowlisted framework files. Fork-owned safety helpers, docs and ignore rules are excluded.
 FRAMEWORK_FILES=(
   # Core docs
-  "README.md"
-  "SETUP.md"
   "AGENTS.md"
   "GEMINI.md"
   "CHANGELOG.md"
   "CONTRIBUTING.md"
   "LICENSE"
   "COG-VERSION"
-  "cog-update.sh"
   "docs/AGENT-SUPPORT.md"
   "docs/SKILL-DISTILLATION.md"
   "WORKFLOW.md"
-  ".claude/lib/checkpoint.sh"
   ".claude/lib/lane-classify.sh"
   ".github/MARKETPLACE.md"
-  "scripts/validate-agent-surface.sh"
 
   # Claude Code skills
   ".claude/skills/onboarding/SKILL.md"
@@ -268,10 +266,8 @@ FRAMEWORK_FILES=(
   ".cursorrules"
   "marketplace-entry.json"
   "plugin.json"
-  "scripts/build-agent-plugin.sh"
 
   # Git infrastructure
-  ".gitignore"
 )
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -306,11 +302,11 @@ How it works:
   1. Adds/fetches the upstream remote (cog-upstream)
   2. Compares each framework file against the upstream version
   3. Offers to update changed files (interactive mode) or updates all (--force)
-  4. Warns if your working tree is already dirty before replacing framework files
+  4. Refuses a dirty working tree; backs up replaced files
   5. Runs the packaging validator after updates when available
   6. Your content folders (00-inbox, 01-daily, etc.) are NEVER modified
 
-Safe to run anytime — your notes, profiles, and braindumps are never touched.
+Review upstream diffs first. Updates are per-file, not transactional; failures may require restoring backups.
 EOF
 }
 
@@ -319,6 +315,9 @@ ensure_remote() {
   if ! git remote get-url "$REMOTE_NAME" &>/dev/null; then
     info "Adding remote ${BOLD}${REMOTE_NAME}${RESET} → ${REMOTE_URL}"
     git remote add "$REMOTE_NAME" "$REMOTE_URL"
+  elif [[ "$(git remote get-url "$REMOTE_NAME")" != "$REMOTE_URL" ]]; then
+    err "Unexpected upstream URL; inspect git remote -v."
+    exit 1
   fi
   info "Fetching latest from ${BOLD}${REMOTE_NAME}/${BRANCH}${RESET}..."
   git fetch "$REMOTE_NAME" "$BRANCH" --quiet
@@ -358,7 +357,26 @@ update_file() {
   local dir
   dir=$(dirname "$file")
   [[ "$dir" != "." ]] && mkdir -p "$dir"
-  git show "${REMOTE_NAME}/${BRANCH}:${file}" > "$file" 2>/dev/null
+  local tmp mode
+  if [[ -L "$file" ]]; then
+    err "Refusing symbolic link: $file"
+    return 1
+  fi
+  tmp=$(mktemp "${file}.update.XXXXXX")
+  if ! git show "${REMOTE_NAME}/${BRANCH}:${file}" > "$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  mode=$(git ls-tree "${REMOTE_NAME}/${BRANCH}" -- "$file" | awk 'NR==1 {print $1}')
+  if [[ "$mode" != "100644" && "$mode" != "100755" ]]; then
+    rm -f "$tmp"
+    err "Unexpected upstream file mode: $mode"
+    return 1
+  fi
+  if ! chmod "$([[ "$mode" == "100755" ]] && echo 755 || echo 644)" "$tmp" || ! mv -f "$tmp" "$file"; then
+    rm -f "$tmp"
+    return 1
+  fi
 }
 
 # ── Backup a file before overwriting ─────────────────────────────────
@@ -366,7 +384,8 @@ backup_file() {
   local file="$1"
   if [[ -f "$file" ]]; then
     local backup="${file}.backup-$(date +%Y%m%d-%H%M%S)"
-    cp "$file" "$backup"
+    backup=$(mktemp "${backup}.XXXXXX")
+    cp -p "$file" "$backup"
     echo "$backup"
   fi
 }
@@ -384,16 +403,19 @@ warn_if_dirty() {
 # Regenerate the Agent Plugins standard mirror (root skills/) after framework
 # updates so it never drifts from the updated .claude/skills/.
 rebuild_agent_plugin() {
-  if [[ -x "scripts/build-agent-plugin.sh" ]]; then
-    ./scripts/build-agent-plugin.sh || warn "Agent plugin mirror rebuild failed; run ./scripts/build-agent-plugin.sh manually"
+  if [[ -f "scripts/build-agent-plugin.sh" ]]; then
+    bash scripts/build-agent-plugin.sh
+  else
+    err "Agent plugin mirror builder missing"
+    return 1
   fi
 }
 
 run_validator() {
-  if [[ -x "$VALIDATOR_SCRIPT" ]]; then
+  if [[ -f "$VALIDATOR_SCRIPT" ]]; then
     echo ""
     info "Running ${BOLD}${VALIDATOR_SCRIPT}${RESET}..."
-    if "$VALIDATOR_SCRIPT"; then
+    if bash "$VALIDATOR_SCRIPT"; then
       ok "Packaging validation passed"
       return 0
     else
@@ -401,8 +423,8 @@ run_validator() {
       return 1
     fi
   else
-    warn "Validator not found at ${VALIDATOR_SCRIPT}; skipping packaging validation"
-    return 0
+    err "Validator missing: ${VALIDATOR_SCRIPT}"
+    return 1
   fi
 }
 
@@ -448,8 +470,10 @@ main() {
   echo ""
 
   if [[ "$mode" == "interactive" || "$mode" == "force" ]]; then
-    warn_if_dirty
-    [[ -n "$(git status --porcelain)" ]] && echo ""
+    if worktree_is_dirty; then
+      err "Working tree is dirty; commit or stash reviewed framework changes first."
+      exit 1
+    fi
   fi
 
   if [[ "$uv" == "unknown" ]]; then
@@ -521,13 +545,14 @@ main() {
       fi
       update_file "$f"
       ok "Updated: $f"
-      ((updated++))
+      updated=$((updated + 1))
     done
     echo ""
-    ok "Updated ${updated} file(s) to v${uv}"
-    info "Backups saved as *.backup-YYYYMMDD-HHMMSS alongside originals"
+    info "Applied ${updated} file(s); validating before reporting success"
+    info "Backups saved alongside originals; restore if validation fails."
     rebuild_agent_plugin
-    run_validator || true
+    run_validator
+    ok "Updated ${updated} file(s) from upstream v${uv}"
     exit 0
   fi
 
@@ -543,10 +568,10 @@ main() {
       if [[ -z "$answer" || "$answer" =~ ^[Yy] ]]; then
         update_file "$f"
         ok "Added: $f"
-        ((updated++))
+        updated=$((updated + 1))
       else
         warn "Skipped: $f"
-        ((skipped++))
+        skipped=$((skipped + 1))
       fi
     done
     echo ""
@@ -564,18 +589,19 @@ main() {
           echo -ne "  Update this file? [Y/n/b] "
           read -r answer2
           if [[ -z "$answer2" || "$answer2" =~ ^[Yy] ]]; then
+            backup_file "$f" >/dev/null
             update_file "$f"
             ok "Updated: $f"
-            ((updated++))
+            updated=$((updated + 1))
           elif [[ "$answer2" =~ ^[Bb] ]]; then
             local bk
             bk=$(backup_file "$f")
             update_file "$f"
             ok "Updated: $f (backup: $bk)"
-            ((updated++))
+            updated=$((updated + 1))
           else
             warn "Skipped: $f"
-            ((skipped++))
+            skipped=$((skipped + 1))
           fi
           ;;
         b|B)
@@ -583,16 +609,21 @@ main() {
           bk=$(backup_file "$f")
           update_file "$f"
           ok "Updated: $f (backup: $bk)"
-          ((updated++))
+          updated=$((updated + 1))
           ;;
         n|N)
           warn "Skipped: $f"
-          ((skipped++))
+          skipped=$((skipped + 1))
           ;;
-        *)
+        y|Y|"")
+          backup_file "$f" >/dev/null
           update_file "$f"
           ok "Updated: $f"
-          ((updated++))
+          updated=$((updated + 1))
+          ;;
+        *)
+          warn "Unrecognized response; skipped: $f"
+          skipped=$((skipped + 1))
           ;;
       esac
     done
@@ -606,9 +637,8 @@ main() {
 
   if [[ $updated -gt 0 ]]; then
     rebuild_agent_plugin
-    run_validator || true
-    info "Review changes with ${BOLD}git diff${RESET}, then commit when ready:"
-    echo "  git add -A && git commit -m \"Update COG framework to v${uv}\""
+    run_validator
+    info "Review git diff and stage only reviewed framework files."
   fi
 }
 

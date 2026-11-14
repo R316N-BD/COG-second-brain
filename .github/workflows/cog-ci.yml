@@ -1,0 +1,26 @@
+name: COG validation
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check Bash syntax
+        run: |
+          for file in cog-update.sh scripts/validate-agent-surface.sh scripts/build-agent-plugin.sh .claude/lib/checkpoint.sh; do
+            bash -n "$file" || exit 1
+          done
+      - name: Validate packaged agent surfaces
+        run: bash scripts/validate-agent-surface.sh
+      - name: Run regression tests
+        run: python3 -m unittest discover -s tests -v

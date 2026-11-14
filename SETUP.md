@@ -2,12 +2,16 @@
 
 Complete step-by-step instructions for setting up your COG (Cognition + Obsidian + Git) agentic second brain system.
 
+## Private data and safe setup
+
+This fork is public. Keep personal notes and credentials local or in a separately secured private vault. Ignore rules protect new files, not previously tracked data. Read [Security and operations](docs/SECURITY-AND-OPERATIONS.md) before onboarding or syncing.
+
 ## Quick Start (Easiest Way)
 
 ### What You Need
 
 1. **AI Agent** (choose one or more):
-   - [Claude Code](https://claude.ai/download) - Uses `.claude/skills/` (full 17-skill native surface)
+   - [Claude Code](https://claude.ai/download) - Uses `.claude/skills/` (full 43-skill native surface)
    - [Kiro](https://kiro.dev/) - Uses `.kiro/powers/` (7 core native powers)
    - [Gemini CLI](https://github.com/google-gemini/gemini-cli) - Uses `GEMINI.md` + `.gemini/commands/` (7 core native commands)
    - Any OpenAI-compatible or markdown-reading agent - Uses `AGENTS.md`
@@ -18,7 +22,7 @@ Complete step-by-step instructions for setting up your COG (Cognition + Obsidian
 
 **Step 1: Clone the repo to where you want your second brain**
 ```bash
-git clone https://github.com/huytieu/COG-second-brain.git
+git clone https://github.com/R316N-BD/COG-second-brain.git
 cd COG-second-brain
 ```
 
@@ -44,10 +48,10 @@ That's it! You now have a working second brain.
 **What just happened?**
 - The cloned `COG-second-brain` folder IS your second brain
 - COG now exposes a clear multi-agent support matrix:
-  - `.claude/skills/` - 33 Claude Code skills (full surface)
+  - `.claude/skills/` - 43 Claude Code skills (full surface)
   - `.kiro/powers/` - 7 Kiro powers (core workflows)
   - `.gemini/commands/` + `.gemini/skills/` - 7 Gemini CLI commands (core workflows)
-  - `AGENTS.md` - 33 documented commands for Codex and other agents
+  - `AGENTS.md` - 43 documented commands for Codex and other agents
 - Onboarding will create your personalized directory structure
 - You can validate the packaged agent surfaces anytime with `./scripts/validate-agent-surface.sh`
 
@@ -131,7 +135,7 @@ COG-second-brain/              # This is your second brain folder
 ├── .claude/
 │   ├── agents/                # 6 worker agent definitions
 │   ├── roles/                 # 7 role packs for personalized recommendations
-│   └── skills/                # 33 Claude Code skills
+│   └── skills/                # 43 Claude Code skills
 │       ├── onboarding/
 │       ├── braindump/
 │       ├── daily-brief/

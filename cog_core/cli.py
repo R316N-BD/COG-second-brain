@@ -165,6 +165,16 @@ def main(argv=None):
     subs.add_parser("nexus", help="Launch Hermes-connected COG Nexus.")
     hermes = subs.add_parser("hermes-config", help="Print COG MCP launcher configuration.")
     hermes.add_argument("--profile", default="hermes-research")
+    subs.add_parser("expansion-catalog")
+    workflow = subs.add_parser("workflow-run")
+    workflow.add_argument("definition", type=Path)
+    subs.add_parser("workflow-history")
+    ingest = subs.add_parser("document-ingest")
+    ingest.add_argument("file", type=Path)
+    lab = subs.add_parser("research-backtest")
+    lab.add_argument("csv", type=Path)
+    lab.add_argument("--window", type=int, default=10)
+    lab.add_argument("--fee-bps", type=float, default=10)
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -235,6 +245,23 @@ def main(argv=None):
             result = {"mcp_servers": {"cog": {"command": sys.executable,
                        "args": [str(ROOT / "scripts/cog_mcp.py"), "--data-dir", str(target),
                                 "--profile", args.profile]}}}
+        elif args.command == "expansion-catalog":
+            from . import expansion
+            result = {"modules": expansion.catalog()}
+        elif args.command == "workflow-run":
+            from . import expansion
+            if args.definition.stat().st_size > 65536:
+                raise ValueError("Workflow file too large.")
+            result = expansion.run_workflow(args.data_dir, json.loads(args.definition.read_text(encoding="utf-8")))
+        elif args.command == "workflow-history":
+            from . import expansion
+            result = {"runs": expansion.history(args.data_dir)}
+        elif args.command == "document-ingest":
+            from . import document_ingest
+            result = document_ingest.ingest(args.data_dir,args.file)
+        elif args.command == "research-backtest":
+            from . import research_lab
+            result = research_lab.backtest(args.csv,args.window,args.fee_bps)
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))

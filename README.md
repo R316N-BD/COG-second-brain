@@ -24,6 +24,8 @@ graph LR
 
 ## Quick Start
 
+**Advanced COG preview:** [MCP gateway and policies](docs/GATEWAY.md) · [Desktop, encrypted backup and incremental recall](docs/ADVANCED.md).
+
 **Local recall and integration discovery:** See [integrations and memory](docs/INTEGRATIONS.md) for SQLite-backed search of the separate vault and the planned agent adapters.
 
 **Windows native foundation:** See [Windows setup](docs/WINDOWS.md) for PowerShell setup, private vault initialization, manifest validation and diagnostics without Bash or WSL.

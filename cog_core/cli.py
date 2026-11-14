@@ -125,7 +125,8 @@ def main(argv=None):
     subs.add_parser("validate", help="Validate manifests and skill mirror.")
     preview = subs.add_parser("update-preview", help="Read-only upstream commit preview.")
     preview.add_argument("--offline", action="store_true")
-    subs.add_parser("memory-index", help="Rebuild local Markdown full-text index.")
+    indexing = subs.add_parser("memory-index", help="Refresh local Markdown full-text index.")
+    indexing.add_argument("--incremental", action="store_true")
     recall = subs.add_parser("recall", help="Search indexed vault notes locally.")
     recall.add_argument("query")
     recall.add_argument("--limit", type=int, default=10)
@@ -147,6 +148,11 @@ def main(argv=None):
     transition.add_argument("id")
     transition.add_argument("status", choices=["queued", "running", "completed", "failed", "cancelled"])
     subs.add_parser("audit")
+    subs.add_parser("backup", help="Create an encrypted Markdown snapshot.")
+    restore = subs.add_parser("restore", help="Restore encrypted Markdown into a new data directory.")
+    restore.add_argument("archive", type=Path)
+    restore.add_argument("destination", type=Path)
+    subs.add_parser("desktop", help="Launch local desktop preview.")
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -156,7 +162,7 @@ def main(argv=None):
         elif args.command == "validate":
             result = validate()
         elif args.command == "memory-index":
-            result = memory.rebuild(private_path(args.data_dir))
+            result = memory.rebuild(private_path(args.data_dir), incremental=args.incremental)
         elif args.command == "recall":
             result = memory.search(private_path(args.data_dir), args.query, args.limit, args.scope)
         elif args.command == "integrations":
@@ -178,10 +184,25 @@ def main(argv=None):
             result = operations.job_transition(args.data_dir, args.id, args.status)
         elif args.command == "audit":
             result = {"events": operations.audit_events(args.data_dir)}
+        elif args.command == "backup":
+            from getpass import getpass
+            from . import backup
+            password = getpass("Backup passphrase: ")
+            if password != getpass("Confirm passphrase: "):
+                raise ValueError("Passphrases do not match.")
+            result = backup.create(args.data_dir, password)
+        elif args.command == "restore":
+            from getpass import getpass
+            from . import backup
+            result = backup.restore(args.archive, args.destination, getpass("Backup passphrase: "))
+        elif args.command == "desktop":
+            from . import desktop
+            desktop.run(args.data_dir)
+            return 0
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))
         return 1 if result.get("ok") is False or result.get("validation", {}).get("ok") is False else 0
-    except (OSError, ValueError, subprocess.SubprocessError, sqlite3.Error) as exc:
+    except (OSError, ValueError, subprocess.SubprocessError, sqlite3.Error, ImportError) as exc:
         print(f"COG: {exc}", file=sys.stderr)
         return 1

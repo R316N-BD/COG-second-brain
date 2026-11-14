@@ -1,4 +1,5 @@
 """Local, rebuildable full-text index of explicitly initialized vault Markdown."""
+from contextlib import closing
 import hashlib
 from pathlib import Path
 import re
@@ -47,7 +48,7 @@ def rebuild(data_dir):
     indexed = 0
     skipped = []
     # On error, rollback preserves the previous index.
-    with sqlite3.connect(db, timeout=10) as conn:
+    with closing(sqlite3.connect(db, timeout=10)) as conn, conn:
         conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS notes USING fts5(path UNINDEXED, sha256 UNINDEXED, title, body)")
         conn.execute("BEGIN")
         conn.execute("DELETE FROM notes")
@@ -94,7 +95,7 @@ def search(data_dir, query, limit=10, scope=None):
     params.append(limit)
     # No write access to the index from search.
     uri = db.as_uri() + "?mode=ro"
-    with sqlite3.connect(uri, uri=True, timeout=10) as conn:
+    with closing(sqlite3.connect(uri, uri=True, timeout=10)) as conn:
         rows = conn.execute(
             "SELECT path, sha256, title, snippet(notes,3,'[',']','...',24) "
             f"FROM notes WHERE {where} ORDER BY bm25(notes) LIMIT ?", params).fetchall()

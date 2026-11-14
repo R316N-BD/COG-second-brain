@@ -1,36 +1,40 @@
 """Explicit local text extraction into an inbox note. Optional office/PDF dependencies."""
 import hashlib
+import io
 from pathlib import Path
 from .paths import note_path, private_path
 
 MAX=16*1024*1024
 MAX_TEXT=128*1024
 
-def extract(path):
+def extract(path, raw=None):
     path=Path(path)
-    if path.stat().st_size>MAX:
+    if raw is None:
+        with path.open("rb") as handle:
+            raw=handle.read(MAX+1)
+    if len(raw)>MAX:
         raise ValueError("File exceeds 16 MiB.")
     suffix=path.suffix.lower()
     if suffix in {".txt",".md",".csv"}:
-        text=path.read_text(encoding="utf-8-sig")
+        text=raw.decode("utf-8-sig")
     elif suffix==".pdf":
         from pypdf import PdfReader
-        reader=PdfReader(path)
+        reader=PdfReader(io.BytesIO(raw))
         if reader.is_encrypted or len(reader.pages)>100:
             raise ValueError("Encrypted or oversized PDF.")
         text="\n".join((page.extract_text() or "") for page in reader.pages)
     elif suffix in {".docx",".xlsx"}:
         import zipfile
-        with zipfile.ZipFile(path) as z:
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
             if len(z.infolist())>5000 or sum(e.file_size for e in z.infolist())>64*1024*1024:
                 raise ValueError("Office archive exceeds extraction budget.")
         if suffix==".docx":
             from docx import Document
-            doc=Document(path)
+            doc=Document(io.BytesIO(raw))
             text="\n".join(p.text for p in doc.paragraphs)
         else:
             from openpyxl import load_workbook
-            book=load_workbook(path,read_only=True,data_only=True,keep_links=False)
+            book=load_workbook(io.BytesIO(raw),read_only=True,data_only=True,keep_links=False)
             try:
                 lines=[]
                 for sheet in book.worksheets[:10]:
@@ -51,11 +55,11 @@ def extract(path):
 def ingest(data,path):
     root=private_path(data)
     path=Path(path)
-    text=extract(path)
     with path.open("rb") as handle:
         raw=handle.read(MAX+1)
     if len(raw)>MAX:
         raise ValueError("Source changed or exceeds limit.")
+    text=extract(path,raw)
     digest=hashlib.sha256(raw).hexdigest()
     relative="00-inbox/import-"+digest+".md"
     destination=note_path(root,relative)

@@ -10,6 +10,7 @@ Data path: Windows Nexus -> existing Hermes dashboard WebSocket -> selected Herm
 
 - Twenty-module catalog with explicit existing/extension/planned status.
 - Owner-invoked workflow DAG validation and runner, with durable SQLite run history and step summaries. Allows index refresh, wiki-link graph, integration discovery and local Ollama inventory only. Unknown actions and dependency cycles fail closed.
+- Optional semantic memory with local Ollama embeddings, scoped source hashes and stale-source rejection. Separate from FTS5; hybrid fusion and chunk-level retrieval remain planned.
 - Explicit document ingestion into a create-only inbox note with source hash. TXT/MD/CSV require no extras. PDF/DOCX/XLSX use optional parsers; Word paragraphs and cached Excel values are extracted, not full document fidelity. No OCR, automatic indexing or upload.
 - Offline close-price moving-average illustration on chronological CSV, with fixed fees and no exchange access. It is not a binary event-contract backtest.
 
@@ -28,6 +29,15 @@ Workflow JSON has name and nodes. Each node has id, action, after (array of pred
 
 Extracted documents are untrusted content. Only import trusted files you intend to put into the private vault. Optional parser resource limits are not a sandbox; PDF expansion and malformed inputs can consume memory. Review before running an index refresh. Indexing can expose sensitive text to a permitted agent; existing gateway policies are not OS isolation.
 
+## Local semantic retrieval (opt-in)
+
+Install a local embedding model in Ollama, configure Ollama for local-only operation, and explicitly authorize selected text being sent to its loopback endpoint. Never use a proxy/cloud-backed service for private notes. COG does not independently verify Ollama's internal network behavior. The feature is owner-only, not exposed via MCP.
+
+    py -3.12 -m cog_core semantic-index --scope 04-projects --model embeddinggemma:latest --allow-local-embedding
+    py -3.12 -m cog_core semantic-recall "Hermes setup" --scope 04-projects --model embeddinggemma:latest --allow-local-embedding
+
+This prototype indexes at most 256 notes per scope and the first 4000 characters of each note. Vectors are stored unencrypted. No automatic cloud fallback, auto-indexing or hybrid ranking. Tests mock the embedding service; live model availability and performance need verification.
+
 ## Remaining integration work
 
 | Module | Hermes-first implementation target |
@@ -37,7 +47,7 @@ Extracted documents are untrusted content. Only import trusted files you intend 
 | Browser | Observe only the explicitly attached dedicated CDP browser; Playwright snapshots and stop control |
 | Computer | Use Hermes tools in a least-privilege Windows account, with exact-action approval |
 | Voice | Hermes voice mode; opt-in wake word and local speech model |
-| Memory | Optional local embeddings, source-hash freshness and collection permissions |
+| Memory | Hybrid rank fusion, chunking and collection authorization for agents |
 | Graph | Interactive frontend of existing wiki-link graph, scoped for agent access |
 | Documents | OCR in isolated worker, parser hardening and review queue |
 | Missions | Hermes Kanban/delegation adapter, confirmed identities, durable reconciliation |

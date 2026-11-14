@@ -266,7 +266,7 @@ def run(data_dir):
                 else:
                     raise GatewayError("Connect Hermes first.")
             except Exception as exc:
-                msg=str(exc) if isinstance(exc,GatewayError) else "Operation failed; inspect configuration and runtime."
+                msg=str(exc) if isinstance(exc,(GatewayError,ValueError)) and action!="connect" else "Operation failed; inspect configuration and runtime."
                 if action=="connect":
                     if client:
                         client.close()

@@ -31,7 +31,7 @@ The floating panel is always on top and anchored near the right edge. Quick mess
 
 Choose a trusted Hermes profile and click Launch + attach. This opens a separate visible Edge/Chrome/Chromium window with a fresh user-data directory and random loopback DevTools port. The browser.manage RPC attaches that endpoint to the selected Hermes profile. Ask Hermes to use its browser tools from Command. Browser capabilities and action approvals remain Hermes-owned.
 
-This is a separate visible browser window, not embedded video or cursor mirroring. It is not a network sandbox or isolated operating-system account. Do not sign into personal, financial, or sensitive accounts. Attach can replace an existing browser connection for the selected profile; confirm first. Detach explicitly and close the dedicated window when finished. The browser profile may persist on disk; remove it manually after closing. Nexus does not auto-detach or auto-clean on exit.
+This is a separate visible browser window, not embedded video or cursor mirroring. It is not a network sandbox or isolated operating-system account. Do not sign into personal, financial, or sensitive accounts. Attach can replace an existing browser connection for the selected profile; confirm first. Detach explicitly and close the dedicated window when finished. A new attachment requires the previous browser process to be closed; Nexus will not reuse the same browser profile for a different bot. The browser profile may persist on disk; remove it manually after closing. Nexus does not auto-detach or auto-clean on exit.
 
 ## Connect COG memory
 

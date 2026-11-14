@@ -37,9 +37,7 @@ class DedicatedBrowser:
 
     def launch(self):
         if self.process is not None and self.process.poll() is None:
-            if self.port is not None:
-                return self.port
-            raise ValueError("Close the existing dedicated browser first.")
+            raise ValueError("Close the previous dedicated browser before launching a fresh profile.")
         executable=find_browser()
         self.directory=Path(tempfile.mkdtemp(prefix="nexus-browser-",dir=checked_child(self.root,"runtime")))
         self.port=None

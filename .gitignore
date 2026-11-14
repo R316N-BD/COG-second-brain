@@ -67,3 +67,5 @@ __pycache__/
 
 # Local Python virtual environments
 .venv/
+
+*.cogbackup

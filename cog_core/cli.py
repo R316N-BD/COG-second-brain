@@ -11,28 +11,9 @@ import sys
 import sqlite3
 from . import memory, integrations
 
-ROOT = Path(__file__).resolve().parents[1]
+from .paths import ROOT, VAULT_FOLDERS, DATA_FOLDERS, default_data_dir, private_path, inside
+from . import policy, operations
 UPSTREAM = "https://github.com/huytieu/COG-second-brain.git"
-VAULT_FOLDERS = ("00-inbox", "01-daily", "02-personal", "03-professional",
-                 "04-projects", "05-knowledge", "06-templates")
-DATA_FOLDERS = ("vault", "memory", "logs", "config", "backups", "runtime")
-
-def default_data_dir():
-    if os.name == "nt":
-        local = os.environ.get("LOCALAPPDATA")
-        return Path(local) / "COG" if local else Path.home() / "AppData/Local/COG"
-    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "cog"
-
-def inside(path, parent):
-    return path == parent or parent in path.parents
-
-def private_path(path, root=ROOT):
-    target = path.expanduser().resolve()
-    if inside(target, root.resolve()) or inside(root.resolve(), target):
-        raise ValueError("Data directory must be separate from framework checkout.")
-    if any((p / ".git").exists() for p in (target, *target.parents)):
-        raise ValueError("Data directory must not be inside a Git working tree.")
-    return target
 
 def init_vault(data_dir, root=ROOT):
     target = private_path(data_dir, root)
@@ -56,6 +37,7 @@ def init_vault(data_dir, root=ROOT):
             out.write("\n")
     except FileExistsError:
         pass
+    policy.init_profiles(target)
     return target
 
 def validate(root=ROOT):
@@ -149,6 +131,22 @@ def main(argv=None):
     recall.add_argument("--limit", type=int, default=10)
     recall.add_argument("--scope", choices=VAULT_FOLDERS)
     subs.add_parser("integrations", help="Discover integration executables without connecting.")
+    subs.add_parser("vault-path", help="Print private vault location.")
+    subs.add_parser("proposals", help="List proposals awaiting review.")
+    inspect = subs.add_parser("proposal-show")
+    inspect.add_argument("id")
+    decision = subs.add_parser("proposal-decide")
+    decision.add_argument("id")
+    decision.add_argument("sha256")
+    decision.add_argument("decision", choices=["approve", "reject"])
+    job = subs.add_parser("job-create")
+    job.add_argument("title")
+    job.add_argument("--agent", required=True)
+    subs.add_parser("jobs")
+    transition = subs.add_parser("job-transition")
+    transition.add_argument("id")
+    transition.add_argument("status", choices=["queued", "running", "completed", "failed", "cancelled"])
+    subs.add_parser("audit")
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -163,6 +161,23 @@ def main(argv=None):
             result = memory.search(private_path(args.data_dir), args.query, args.limit, args.scope)
         elif args.command == "integrations":
             result = integrations.discover()
+        elif args.command == "vault-path":
+            result = {"vault": str(private_path(args.data_dir) / "vault")}
+        elif args.command == "proposals":
+            result = {"proposals": operations.proposals(args.data_dir)}
+        elif args.command == "proposal-show":
+            result = operations.proposals(args.data_dir, args.id)
+        elif args.command == "proposal-decide":
+            result = operations.decide(args.data_dir, args.id, args.sha256, args.decision == "approve")
+        elif args.command == "job-create":
+            policy.load_profile(args.data_dir, args.agent)
+            result = operations.create_job(args.data_dir, args.title, args.agent)
+        elif args.command == "jobs":
+            result = {"jobs": operations.list_jobs(args.data_dir)}
+        elif args.command == "job-transition":
+            result = operations.job_transition(args.data_dir, args.id, args.status)
+        elif args.command == "audit":
+            result = {"events": operations.audit_events(args.data_dir)}
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))

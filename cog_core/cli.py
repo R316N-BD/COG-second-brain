@@ -175,6 +175,14 @@ def main(argv=None):
     lab.add_argument("csv", type=Path)
     lab.add_argument("--window", type=int, default=10)
     lab.add_argument("--fee-bps", type=float, default=10)
+    for command in ("semantic-index","semantic-recall"):
+        sem = subs.add_parser(command)
+        sem.add_argument("--scope", required=True, choices=VAULT_FOLDERS)
+        sem.add_argument("--model", required=True, choices=["embeddinggemma:latest","nomic-embed-text:latest"])
+        sem.add_argument("--allow-local-embedding", action="store_true", required=True,
+                         help="Confirm transfer of selected text to local-only Ollama.")
+        if command == "semantic-recall":
+            sem.add_argument("query")
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -262,6 +270,12 @@ def main(argv=None):
         elif args.command == "research-backtest":
             from . import research_lab
             result = research_lab.backtest(args.csv,args.window,args.fee_bps)
+        elif args.command == "semantic-index":
+            from . import semantic
+            result = semantic.build(args.data_dir,args.scope,args.model)
+        elif args.command == "semantic-recall":
+            from . import semantic
+            result = semantic.search(args.data_dir,args.scope,args.model,args.query)
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))

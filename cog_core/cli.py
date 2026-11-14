@@ -8,6 +8,8 @@ import re
 import shutil
 import subprocess
 import sys
+import sqlite3
+from . import memory, integrations
 
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = "https://github.com/huytieu/COG-second-brain.git"
@@ -141,6 +143,12 @@ def main(argv=None):
     subs.add_parser("validate", help="Validate manifests and skill mirror.")
     preview = subs.add_parser("update-preview", help="Read-only upstream commit preview.")
     preview.add_argument("--offline", action="store_true")
+    subs.add_parser("memory-index", help="Rebuild local Markdown full-text index.")
+    recall = subs.add_parser("recall", help="Search indexed vault notes locally.")
+    recall.add_argument("query")
+    recall.add_argument("--limit", type=int, default=10)
+    recall.add_argument("--scope", choices=VAULT_FOLDERS)
+    subs.add_parser("integrations", help="Discover integration executables without connecting.")
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -149,10 +157,16 @@ def main(argv=None):
             result = doctor(args.data_dir)
         elif args.command == "validate":
             result = validate()
+        elif args.command == "memory-index":
+            result = memory.rebuild(private_path(args.data_dir))
+        elif args.command == "recall":
+            result = memory.search(private_path(args.data_dir), args.query, args.limit, args.scope)
+        elif args.command == "integrations":
+            result = integrations.discover()
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))
         return 1 if result.get("ok") is False or result.get("validation", {}).get("ok") is False else 0
-    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+    except (OSError, ValueError, subprocess.SubprocessError, sqlite3.Error) as exc:
         print(f"COG: {exc}", file=sys.stderr)
         return 1

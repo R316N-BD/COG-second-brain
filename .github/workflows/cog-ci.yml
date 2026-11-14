@@ -22,7 +22,7 @@ jobs:
       - name: Native manifest validation
         run: python -m cog_core validate
       - name: Native core regression tests
-        run: python -m unittest discover -s tests -p test_native_core.py -v
+        run: python -m unittest discover -s tests -p 'test_native*.py' -v
       - name: Windows PowerShell smoke test
         if: runner.os == 'Windows'
         shell: powershell

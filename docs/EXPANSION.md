@@ -64,3 +64,7 @@ This prototype indexes at most 256 notes per scope and the first 4000 characters
 | Installer | Signed native release, transactional updates and verified recovery |
 
 The catalog describes integration points rather than installed connectors. Existing Nexus still uses Tkinter, and a browser design preview is separate from the live desktop. The complete 20-module native application is not implemented.
+
+## Expanded companion
+
+See [Expansion operations](EXPANSION-OPERATIONS.md) for native tray/hotkey, browser snapshots, owner-only utilities, staged installer and the exact current implementation matrix. The [interactive twenty-module preview](../preview/nexus-expansion.html) is separate from the live desktop.

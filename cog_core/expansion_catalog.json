@@ -5,7 +5,7 @@
     "owner": "hermes",
     "status": "extension",
     "route": "profiles.list; session.active_list",
-    "detail": "2D workforce exists; 3D rendering is preview only"
+    "detail": "Live 2D roster plus animated CSS 3D demo; full live scene pending"
   },
   {
     "id": "floating",
@@ -13,7 +13,7 @@
     "owner": "hermes",
     "status": "extension",
     "route": "Nexus quick panel",
-    "detail": "Always-on-top exists; native tray, shortcut and voice pending"
+    "detail": "Always-on-top panel, opt-in Windows tray/hotkey and generic notifications; Windows validation pending"
   },
   {
     "id": "browser",
@@ -21,23 +21,23 @@
     "owner": "hermes",
     "status": "extension",
     "route": "browser.manage",
-    "detail": "Dedicated browser exists; Playwright observation pending"
+    "detail": "Dedicated browser plus opt-in Playwright on-demand snapshots; live stream pending"
   },
   {
     "id": "computer",
     "name": "Computer control",
     "owner": "hermes",
-    "status": "planned",
+    "status": "extension",
     "route": "Hermes approved tools",
-    "detail": "No arbitrary desktop automation in COG"
+    "detail": "Owner-only fixed Calculator/Notepad launches; no arbitrary automation"
   },
   {
     "id": "voice",
     "name": "Voice assistant",
     "owner": "hermes",
-    "status": "planned",
+    "status": "extension",
     "route": "Hermes voice mode",
-    "detail": "Wake word and push-to-talk adapter pending"
+    "detail": "Optional local file transcription and Windows SAPI speech; wake word pending"
   },
   {
     "id": "memory",
@@ -83,17 +83,17 @@
     "id": "models",
     "name": "AI model router",
     "owner": "hermes",
-    "status": "existing",
+    "status": "extension",
     "route": "Hermes provider config; Ollama inventory",
-    "detail": "No COG cloud fallback"
+    "detail": "Existing Hermes provider config, Ollama inventory and privacy route recommendations"
   },
   {
     "id": "aegis",
     "name": "AEGIS security center",
     "owner": "cog",
-    "status": "planned",
+    "status": "extension",
     "route": "audit export",
-    "detail": "No live AEGIS connection"
+    "detail": "Redacted offline audit category counts; no live monitoring"
   },
   {
     "id": "studio",
@@ -131,9 +131,9 @@
     "id": "home",
     "name": "Smart-home control",
     "owner": "hermes",
-    "status": "planned",
+    "status": "extension",
     "route": "Home Assistant MCP",
-    "detail": "Requires authorized server; no device writes"
+    "detail": "Single read-only loopback entity query; no writes"
   },
   {
     "id": "trading",
@@ -157,6 +157,6 @@
     "owner": "cog",
     "status": "extension",
     "route": "start-nexus.ps1",
-    "detail": "Source launcher exists; signed package pending"
+    "detail": "User-local staged source installer; signed packages pending"
   }
 ]

@@ -7,7 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 def run(*args, cwd, check=True):
-    return subprocess.run(args, cwd=cwd, text=True, capture_output=True, check=check)
+    result = subprocess.run(args, cwd=cwd, text=True, capture_output=True)
+    if check and result.returncode:
+        raise AssertionError(f"{args!r} exited {result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+    return result
 
 def git(cwd, *args, **kw):
     return run("git", *args, cwd=cwd, **kw)

@@ -539,7 +539,8 @@ main() {
   # ── Force mode ───────────────────────────────────────────────────
   if [[ "$mode" == "force" ]]; then
     local updated=0
-    for f in "${changed[@]}" "${new_files[@]}"; do
+    # Bash 3.2 (macOS) treats an empty array as unset under nounset.
+    for f in ${changed[@]+"${changed[@]}"} ${new_files[@]+"${new_files[@]}"}; do
       if [[ -f "$f" ]]; then
         backup_file "$f" >/dev/null
       fi
@@ -585,7 +586,7 @@ main() {
       read -r answer
       case "$answer" in
         d|D|diff)
-          diff --color=auto <(cat "$f") <(git show "${REMOTE_NAME}/${BRANCH}:${f}") || true
+          diff <(cat "$f") <(git show "${REMOTE_NAME}/${BRANCH}:${f}") || true
           echo -ne "  Update this file? [Y/n/b] "
           read -r answer2
           if [[ -z "$answer2" || "$answer2" =~ ^[Yy] ]]; then

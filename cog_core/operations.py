@@ -105,3 +105,28 @@ def job_transition(data_dir, ident, status):
 def audit_events(data_dir):
     with store(data_dir) as conn:
         return [dict(row) for row in conn.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 200")]
+
+def apply_proposal(data_dir, ident, digest):
+    """Explicit local operator action; create-only, never overwrite."""
+    with store(data_dir) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM proposals WHERE id=? AND digest=? AND status='approved'",
+                           (ident, digest)).fetchone()
+        if row is None:
+            raise ValueError("No matching approved proposal.")
+        body = row["body"].encode("utf-8")
+        if hashlib.sha256(body).hexdigest() != digest:
+            raise ValueError("Proposal contents no longer match approval.")
+        # Respect current policy even if it was revoked after approval.
+        from .policy import load_profile
+        load_profile(data_dir, row["agent"]).require("propose", row["path"].split("/")[0])
+        path = note_path(data_dir, row["path"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path = note_path(data_dir, row["path"])
+        # Exclusive creation. A crash between this write and DB commit requires
+        # manual reconciliation; no existing note will be overwritten on retry.
+        with path.open("xb") as handle:
+            handle.write(body)
+        conn.execute("UPDATE proposals SET status='applied' WHERE id=?", (ident,))
+        _audit(conn, "local-operator", "proposal-apply", ident, "applied")
+    return {"id": ident, "status": "applied", "path": row["path"]}

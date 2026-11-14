@@ -24,6 +24,8 @@ graph LR
 
 ## Quick Start
 
+**Windows native foundation:** See [Windows setup](docs/WINDOWS.md) for PowerShell setup, private vault initialization, manifest validation and diagnostics without Bash or WSL.
+
 **1. Clone & enter the repo:**
 ```bash
 git clone https://github.com/R316N-BD/COG-second-brain.git

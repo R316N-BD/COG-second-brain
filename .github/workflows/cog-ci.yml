@@ -8,19 +8,40 @@ permissions:
 jobs:
   validate:
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native manifest validation
+        run: python -m cog_core validate
+      - name: Native core regression tests
+        run: python -m unittest discover -s tests -p test_native_core.py -v
+      - name: Windows PowerShell smoke test
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $Data = Join-Path $env:RUNNER_TEMP 'COG smoke test'
+          & powershell.exe -NoProfile -File scripts/setup-windows.ps1 -DataDir $Data
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & powershell.exe -NoProfile -File scripts/cog-update.ps1 -Offline
+          exit $LASTEXITCODE
       - name: Check Bash syntax
+        if: runner.os != 'Windows'
+        shell: bash
         run: |
           for file in cog-update.sh scripts/validate-agent-surface.sh scripts/build-agent-plugin.sh .claude/lib/checkpoint.sh; do
             bash -n "$file" || exit 1
           done
-      - name: Validate packaged agent surfaces
+      - name: Validate legacy packaged surfaces
+        if: runner.os != 'Windows'
         run: bash scripts/validate-agent-surface.sh
-      - name: Run regression tests
-        run: python3 -m unittest discover -s tests -v
+      - name: Legacy regression tests
+        if: runner.os != 'Windows'
+        run: python -m unittest discover -s tests -p test_hardening.py -v

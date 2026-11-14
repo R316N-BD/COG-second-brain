@@ -37,175 +37,19 @@ record_cp() {
   local dir="$1" cp_id="$2" result="$3" note="${4:-}"
   case "$cp_id" in CP-0|CP-1|CP-2|CP-3|CP-3v|CP-4|CP-5|CP-6|CP-7) ;; *) echo "invalid checkpoint: $cp_id" >&2; return 2 ;; esac
   case "$result" in PASS|FAIL|SKIP) ;; *) echo "invalid result: $result" >&2; return 2 ;; esac
-  note=${note//  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$dir/evidence"
-  printf '%s\t%s\t%s\t%s\n' "$ts" "$cp_id" "$result" "$note" >> "$dir/evidence/checkpoints.tsv"
-  [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  printf '%s\t%s\t%s\t%s\t%s\n' "$ts" "$cp_id" "$result" "$note" "$dir" >> "$LOG"
-  echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
-}
-
-status_run() {
-  local dir="$1"
-  if [[ -f "$dir/evidence/checkpoints.tsv" ]]; then
-    column -t -s $'\t' "$dir/evidence/checkpoints.tsv" 2>/dev/null || cat "$dir/evidence/checkpoints.tsv"
-  else
-    echo "no checkpoints yet: $dir"
-  fi
-}
-
-case "$cmd" in
-  init) init_run "${1:?run-dir}" ;;
-  record) record_cp "${1:?run-dir}" "${2:?CP-id}" "${3:?PASS|FAIL|SKIP}" "${4:-}" ;;
-  status) status_run "${1:?run-dir}" ;;
-  *)
-    echo "usage: checkpoint.sh init|record|status <run-dir> [CP-id] [PASS|FAIL|SKIP] [note]" >&2
-    exit 1
-    ;;
-esac
-\t'/ }
-  note=${note//  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$dir/evidence"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}" >> "$dir/evidence/checkpoints.tsv"
-  [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}\t${dir}" >> "$LOG"
-  echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
-}
-
-status_run() {
-  local dir="$1"
-  if [[ -f "$dir/evidence/checkpoints.tsv" ]]; then
-    column -t -s $'\t' "$dir/evidence/checkpoints.tsv" 2>/dev/null || cat "$dir/evidence/checkpoints.tsv"
-  else
-    echo "no checkpoints yet: $dir"
-  fi
-}
-
-case "$cmd" in
-  init) init_run "${1:?run-dir}" ;;
-  record) record_cp "${1:?run-dir}" "${2:?CP-id}" "${3:?PASS|FAIL|SKIP}" "${4:-}" ;;
-  status) status_run "${1:?run-dir}" ;;
-  *)
-    echo "usage: checkpoint.sh init|record|status <run-dir> [CP-id] [PASS|FAIL|SKIP] [note]" >&2
-    exit 1
-    ;;
-esac
-\r'/ }
-  note=${note//  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$dir/evidence"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}" >> "$dir/evidence/checkpoints.tsv"
-  [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}\t${dir}" >> "$LOG"
-  echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
-}
-
-status_run() {
-  local dir="$1"
-  if [[ -f "$dir/evidence/checkpoints.tsv" ]]; then
-    column -t -s $'\t' "$dir/evidence/checkpoints.tsv" 2>/dev/null || cat "$dir/evidence/checkpoints.tsv"
-  else
-    echo "no checkpoints yet: $dir"
-  fi
-}
-
-case "$cmd" in
-  init) init_run "${1:?run-dir}" ;;
-  record) record_cp "${1:?run-dir}" "${2:?CP-id}" "${3:?PASS|FAIL|SKIP}" "${4:-}" ;;
-  status) status_run "${1:?run-dir}" ;;
-  *)
-    echo "usage: checkpoint.sh init|record|status <run-dir> [CP-id] [PASS|FAIL|SKIP] [note]" >&2
-    exit 1
-    ;;
-esac
-\n'/ }
-  if [[ "$dir" == *  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$dir/evidence"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}" >> "$dir/evidence/checkpoints.tsv"
-  [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}\t${dir}" >> "$LOG"
-  echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
-}
-
-status_run() {
-  local dir="$1"
-  if [[ -f "$dir/evidence/checkpoints.tsv" ]]; then
-    column -t -s $'\t' "$dir/evidence/checkpoints.tsv" 2>/dev/null || cat "$dir/evidence/checkpoints.tsv"
-  else
-    echo "no checkpoints yet: $dir"
-  fi
-}
-
-case "$cmd" in
-  init) init_run "${1:?run-dir}" ;;
-  record) record_cp "${1:?run-dir}" "${2:?CP-id}" "${3:?PASS|FAIL|SKIP}" "${4:-}" ;;
-  status) status_run "${1:?run-dir}" ;;
-  *)
-    echo "usage: checkpoint.sh init|record|status <run-dir> [CP-id] [PASS|FAIL|SKIP] [note]" >&2
-    exit 1
-    ;;
-esac
-\t'* || "$dir" == *  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$dir/evidence"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}" >> "$dir/evidence/checkpoints.tsv"
-  [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}\t${dir}" >> "$LOG"
-  echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
-}
-
-status_run() {
-  local dir="$1"
-  if [[ -f "$dir/evidence/checkpoints.tsv" ]]; then
-    column -t -s $'\t' "$dir/evidence/checkpoints.tsv" 2>/dev/null || cat "$dir/evidence/checkpoints.tsv"
-  else
-    echo "no checkpoints yet: $dir"
-  fi
-}
-
-case "$cmd" in
-  init) init_run "${1:?run-dir}" ;;
-  record) record_cp "${1:?run-dir}" "${2:?CP-id}" "${3:?PASS|FAIL|SKIP}" "${4:-}" ;;
-  status) status_run "${1:?run-dir}" ;;
-  *)
-    echo "usage: checkpoint.sh init|record|status <run-dir> [CP-id] [PASS|FAIL|SKIP] [note]" >&2
-    exit 1
-    ;;
-esac
-\n'* || "$dir" == *  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  mkdir -p "$dir/evidence"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}" >> "$dir/evidence/checkpoints.tsv"
-  [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}\t${dir}" >> "$LOG"
-  echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
-}
-
-status_run() {
-  local dir="$1"
-  if [[ -f "$dir/evidence/checkpoints.tsv" ]]; then
-    column -t -s $'\t' "$dir/evidence/checkpoints.tsv" 2>/dev/null || cat "$dir/evidence/checkpoints.tsv"
-  else
-    echo "no checkpoints yet: $dir"
-  fi
-}
-
-case "$cmd" in
-  init) init_run "${1:?run-dir}" ;;
-  record) record_cp "${1:?run-dir}" "${2:?CP-id}" "${3:?PASS|FAIL|SKIP}" "${4:-}" ;;
-  status) status_run "${1:?run-dir}" ;;
-  *)
-    echo "usage: checkpoint.sh init|record|status <run-dir> [CP-id] [PASS|FAIL|SKIP] [note]" >&2
-    exit 1
-    ;;
-esac
-\r'* ]]; then
+  note=${note//$'\t'/ }
+  note=${note//$'\r'/ }
+  note=${note//$'\n'/ }
+  if [[ "$dir" == *$'\t'* || "$dir" == *$'\n'* || "$dir" == *$'\r'* ]]; then
     echo "invalid run directory" >&2; return 2
   fi
   mkdir -p "$ROOT/.claude/logs"
   local ts
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   mkdir -p "$dir/evidence"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}" >> "$dir/evidence/checkpoints.tsv"
+  printf '%s\t%s\t%s\t%s\n' "$ts" "$cp_id" "$result" "$note" >> "$dir/evidence/checkpoints.tsv"
   [[ -f "$LOG" ]] || echo -e "timestamp\tcp\tresult\tnote\trun_dir" >> "$LOG"
-  echo -e "${ts}\t${cp_id}\t${result}\t${note}\t${dir}" >> "$LOG"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$ts" "$cp_id" "$result" "$note" "$dir" >> "$LOG"
   echo "recorded: ${cp_id} ${result} → ${dir}/evidence/checkpoints.tsv"
 }
 

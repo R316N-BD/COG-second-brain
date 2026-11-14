@@ -153,6 +153,15 @@ def main(argv=None):
     restore.add_argument("archive", type=Path)
     restore.add_argument("destination", type=Path)
     subs.add_parser("desktop", help="Launch local desktop preview.")
+    apply = subs.add_parser("proposal-apply", help="Apply an approved proposal as a new note.")
+    apply.add_argument("id")
+    apply.add_argument("sha256")
+    subs.add_parser("graph", help="Build local wiki-link graph.")
+    subs.add_parser("ollama-models", help="Query local Ollama model inventory.")
+    gh = subs.add_parser("github-status", help="Read repository metadata using GitHub CLI.")
+    gh.add_argument("repository")
+    maintenance = subs.add_parser("maintenance", help="Run an allowlisted local maintenance job.")
+    maintenance.add_argument("action", choices=["index-refresh"])
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -199,6 +208,20 @@ def main(argv=None):
             from . import desktop
             desktop.run(args.data_dir)
             return 0
+        elif args.command == "proposal-apply":
+            result = operations.apply_proposal(args.data_dir, args.id, args.sha256)
+        elif args.command == "graph":
+            from . import graph
+            result = graph.build(args.data_dir)
+        elif args.command == "ollama-models":
+            from . import adapters
+            result = adapters.ollama_models()
+        elif args.command == "github-status":
+            from . import adapters
+            result = adapters.github_status(args.repository)
+        elif args.command == "maintenance":
+            from . import maintenance
+            result = maintenance.run(args.data_dir, args.action)
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))

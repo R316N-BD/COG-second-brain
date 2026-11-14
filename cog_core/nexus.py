@@ -73,6 +73,8 @@ def run(data_dir):
             view.column(col,width=150)
         view.pack(fill="both",expand=True)
         return view
+    office=tk.Canvas(team,bg="#111c2d",height=135,highlightthickness=0)
+    office.pack(fill="x",pady=(0,8))
     roster=table(team,("profile","name","model","provider"))
     ttk.Label(team,text="Live sessions for selected profile").pack(anchor="w",pady=(8,2))
     sessions=table(team,("title","status","model","source"))
@@ -99,7 +101,7 @@ def run(data_dir):
     notes.configure(state="disabled")
     panel=tk.Toplevel(root)
     panel.title("COG Quick Command")
-    panel.geometry("370x320+30+100")
+    panel.geometry(f"370x320+{max(0,root.winfo_screenwidth()-410)}+100")
     panel.attributes("-topmost",True)
     panel.withdraw()
     panel.protocol("WM_DELETE_WINDOW",panel.withdraw)
@@ -141,8 +143,13 @@ def run(data_dir):
 
     def connect():
         if state["attached"]:
-            messagebox.showwarning("COG","Detach the current browser before reconnecting.")
-            return
+            if state["online"]:
+                messagebox.showwarning("COG","Detach the current browser before reconnecting.")
+                return
+            if not messagebox.askyesno("COG","Close the dedicated browser and disconnect its profile in Hermes first. Have you done that?"):
+                return
+            state["attached"]=None
+            browser_label.set("Attachment unknown; verify in Hermes.")
         if state["uncertain"] and not messagebox.askyesno("COG","Check the previous turn in Hermes before reconnecting. Continue?"):
             return
         if put("connect",base.get(),token.get()):
@@ -167,6 +174,11 @@ def run(data_dir):
             status.set("Submitting to "+profile.get())
             write(transcript,"\nYOU ["+profile.get()+"]\n"+content+"\n\nHERMES\n")
             widget.delete("1.0","end")
+
+    def interrupt():
+        if state["online"] and state["busy"] and state["session"] and not state["pending"]:
+            if messagebox.askyesno("Interrupt turn","Ask Hermes to interrupt the current turn?"):
+                put("interrupt",state["owner"],state["session"])
 
     def new():
         if state["busy"] or state["pending"]:
@@ -195,6 +207,7 @@ def run(data_dir):
     button(connection,"Quick panel",panel.deiconify,"right")
     button(actions,"Send",lambda:send(composer),"right")
     button(actions,"New session",new)
+    button(actions,"Interrupt",interrupt)
     button(mini_bar,"Send",lambda:send(quick),"right")
     button(mini_bar,"Open workspace",root.deiconify)
     button(browser_bar,"Launch + attach",attach)
@@ -232,6 +245,9 @@ def run(data_dir):
                     sid=sid or client.new_session(owner)
                     emit("session",(owner,sid))
                     emit("receipt",client.submit(owner,sid,payload)["status"])
+                elif action=="interrupt" and client:
+                    client.request("session.interrupt",{"profile":args[0],"session_id":args[1]})
+                    emit("interrupt","Interrupt requested — wait for Hermes to confirm the turn ended.")
                 elif action=="attach" and client:
                     port=browser.launch()
                     result=client.browser(args[0],"connect",port)
@@ -297,7 +313,26 @@ def run(data_dir):
                 chart.create_rectangle(125,y,end,y+18,fill="#38bdf8",outline="")
                 chart.create_text(end+5,y+10,text=str(row["value"]),anchor="w",fill="#dbeafe")
 
+    def draw_office(rows):
+        office.delete("all")
+        width=max(office.winfo_width(),760)
+        center=width/2
+        office.create_rectangle(center-90,6,center+90,36,fill="#1d4ed8",outline="")
+        office.create_text(center,21,text="HERMES RUNTIME",fill="white",font=("Segoe UI",10,"bold"))
+        shown=rows[:5]
+        for i,row in enumerate(shown):
+            x=(i+1)*width/(len(shown)+1)
+            office.create_line(center,36,x,68,fill="#64748b")
+            office.create_rectangle(x-65,68,x+65,111,fill="#263449",outline="#38bdf8")
+            office.create_text(x,82,text=row["title"][:20],fill="white")
+            office.create_text(x,99,text="Profile reported",fill="#93c5fd",font=("Segoe UI",8))
+        if len(rows)>5:
+            office.create_text(center,125,text=f"+{len(rows)-5} more in roster",fill="#94a3b8")
+        if not rows:
+            office.create_text(center,88,text="No profiles reported",fill="#94a3b8")
+
     def profiles(rows):
+        draw_office(rows)
         names=[r["name"] for r in rows]
         picker["values"]=names
         if profile.get() not in names:
@@ -325,6 +360,8 @@ def run(data_dir):
             if isinstance(final,str) and final:
                 if not state["reply"]:
                     write(transcript,final[:262144])
+                elif final[:262144]!=state["reply"]:
+                    write(transcript,"\n\nFINAL REPLY\n"+final[:262144])
                 state["reply"]=final[:262144]
             render(state["reply"])
             state["busy"]=False
@@ -358,6 +395,8 @@ def run(data_dir):
                     status.set("Hermes "+value)
             elif kind=="event":
                 event(value)
+            elif kind=="interrupt":
+                status.set(value)
             elif kind=="offline":
                 state.update(online=False,busy=False,uncertain=True)
                 status.set(value)

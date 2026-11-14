@@ -24,6 +24,8 @@ graph LR
 
 ## Quick Start
 
+**COG Nexus:** [Hermes-connected desktop companion](docs/NEXUS.md) — floating command panel, live workforce, dedicated browser attachment and visual replies.
+
 **Advanced COG preview:** [MCP gateway and policies](docs/GATEWAY.md) · [Desktop, encrypted backup and incremental recall](docs/ADVANCED.md).
 
 **Local recall and integration discovery:** See [integrations and memory](docs/INTEGRATIONS.md) for SQLite-backed search of the separate vault and the planned agent adapters.

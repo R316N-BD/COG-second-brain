@@ -24,6 +24,8 @@ graph LR
 
 ## Quick Start
 
+**Hermes-first expansion:** [20-module architecture and local workflow tools](docs/EXPANSION.md).
+
 **COG Nexus:** [Hermes-connected desktop companion](docs/NEXUS.md) — floating command panel, live workforce, dedicated browser attachment and visual replies.
 
 **Advanced COG preview:** [MCP gateway and policies](docs/GATEWAY.md) · [Desktop, encrypted backup and incremental recall](docs/ADVANCED.md).

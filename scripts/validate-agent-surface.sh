@@ -69,6 +69,7 @@ else
 fi
 
 manifest_tmp="$(mktemp)"
+trap 'rm -f "$manifest_tmp"' EXIT
 python3 - <<'PY' > "$manifest_tmp"
 import json
 with open('.claude-plugin/plugin.json') as f:
@@ -130,10 +131,15 @@ else
   record_failure "Version mismatch: .claude-plugin/plugin.json=$plugin_version plugin.json=$agent_plugin_version marketplace-entry.json=$marketplace_version COG-VERSION=$cog_version"
 fi
 
-if rg -n "agents\.md" README.md SETUP.md CONTRIBUTING.md .github/MARKETPLACE.md >/dev/null 2>&1; then
+if grep -nF "agents.md" README.md SETUP.md CONTRIBUTING.md .github/MARKETPLACE.md >/dev/null 2>&1; then
   record_failure "Found lowercase 'agents.md' references in packaging docs; use AGENTS.md consistently"
 else
-  ok "Packaging docs consistently use AGENTS.md casing"
+  grep_status=$?
+  if [[ "$grep_status" -eq 1 ]]; then
+    ok "Packaging docs consistently use AGENTS.md casing"
+  else
+    record_failure "Unable to inspect packaging docs (grep exit $grep_status)"
+  fi
 fi
 
 kiro_count=$(find .kiro/powers -name POWER.md | wc -l | tr -d ' ')

@@ -45,7 +45,7 @@
     "owner": "cog",
     "status": "extension",
     "route": "cog_search; local embeddings",
-    "detail": "FTS5 exists; semantic search is optional"
+    "detail": "FTS5 and opt-in scoped local Ollama semantic index; hybrid fusion and agent permissions pending"
   },
   {
     "id": "graph",

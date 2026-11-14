@@ -19,12 +19,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Compile native Python modules
+        run: python -m compileall -q cog_core scripts/cog_mcp.py
       - name: Native manifest validation
         run: python -m cog_core validate
       - name: Native core regression tests
         run: python -m unittest discover -s tests -p 'test_native*.py' -v
       - name: Install optional MCP SDK
-        run: python -m pip install -r requirements-mcp.txt -r requirements-backup.txt
+        run: python -m pip install -r requirements-mcp.txt -r requirements-backup.txt -r requirements-nexus.txt
       - name: MCP protocol tests
         run: python -m unittest discover -s tests -p test_mcp_gateway.py -v
       - name: Encrypted backup tests

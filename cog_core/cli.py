@@ -162,6 +162,9 @@ def main(argv=None):
     gh.add_argument("repository")
     maintenance = subs.add_parser("maintenance", help="Run an allowlisted local maintenance job.")
     maintenance.add_argument("action", choices=["index-refresh"])
+    subs.add_parser("nexus", help="Launch Hermes-connected COG Nexus.")
+    hermes = subs.add_parser("hermes-config", help="Print COG MCP launcher configuration.")
+    hermes.add_argument("--profile", default="hermes-research")
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
@@ -222,6 +225,16 @@ def main(argv=None):
         elif args.command == "maintenance":
             from . import maintenance
             result = maintenance.run(args.data_dir, args.action)
+        elif args.command == "nexus":
+            from . import nexus
+            nexus.run(args.data_dir)
+            return 0
+        elif args.command == "hermes-config":
+            target = private_path(args.data_dir)
+            policy.load_profile(target, args.profile)
+            result = {"mcp_servers": {"cog": {"command": sys.executable,
+                       "args": [str(ROOT / "scripts/cog_mcp.py"), "--data-dir", str(target),
+                                "--profile", args.profile]}}}
         else:
             result = update_preview(offline=args.offline)
         print(json.dumps(result, indent=2))

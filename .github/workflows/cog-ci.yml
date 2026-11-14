@@ -33,6 +33,14 @@ jobs:
         run: python -m unittest discover -s tests -p test_mcp_gateway.py -v
       - name: Encrypted backup tests
         run: python -m unittest discover -s tests -p test_backup.py -v
+      - name: Validate Windows installer syntax
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $Tokens = $null
+          $Errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/install-nexus-user.ps1).Path, [ref]$Tokens, [ref]$Errors) | Out-Null
+          if ($Errors.Count -gt 0) { $Errors | Out-String | Write-Error; exit 1 }
       - name: Windows PowerShell smoke test
         if: runner.os == 'Windows'
         shell: powershell

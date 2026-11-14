@@ -1,0 +1,24 @@
+{
+  "name": "Nexus maintenance",
+  "nodes": [
+    {
+      "id": "discover",
+      "action": "discover",
+      "after": []
+    },
+    {
+      "id": "index",
+      "action": "index",
+      "after": [
+        "discover"
+      ]
+    },
+    {
+      "id": "graph",
+      "action": "graph",
+      "after": [
+        "index"
+      ]
+    }
+  ]
+}

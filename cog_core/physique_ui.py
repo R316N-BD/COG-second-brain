@@ -27,7 +27,7 @@ def open_workspace(vault, parent=None, coach_stage=None):
     tabs=ttk.Notebook(outer)
     tabs.pack(fill="both",expand=True)
     pages={}
-    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","AI Coach","Body 3D","Mobile","Privacy"):
+    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","AI Coach","Body 3D","Atlas","Movement","Mobile","Privacy"):
         page=ttk.Frame(tabs,style="Physique.TFrame",padding=16)
         tabs.add(page,text=name)
         pages[name]=page
@@ -104,6 +104,9 @@ def open_workspace(vault, parent=None, coach_stage=None):
     clear_coach, coach_feedback=mount_coach(pages["AI Coach"],stage=coach_stage)
     from .physique_anatomy_ui import mount_anatomy
     load_anatomy=mount_anatomy(pages["Body 3D"])
+    from .physique_atlas_ui import mount_atlas,mount_movement
+    mount_atlas(pages["Atlas"])
+    mount_movement(pages["Movement"])
     mobile=pages["Mobile"]
     ttk.Label(mobile,text="MOBILE ATHLETE COMMAND",style="Physique.TLabel",font=("Segoe UI",18,"bold")).pack(anchor="w")
     ttk.Label(mobile,text="Create an encrypted, read-only HTML snapshot for your phone. It contains selected history and contest milestones, plus optionally accepted commander drafts. Transfer the file privately and open only a trusted unmodified copy in a compatible local browser. No live synchronization or upload.",style="Physique.TLabel",wraplength=850,justify="left").pack(anchor="w",pady=12)

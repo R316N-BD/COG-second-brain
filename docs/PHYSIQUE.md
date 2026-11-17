@@ -65,6 +65,54 @@ never enter private health records or identifiers. No automatic retries,
 multi-agent dispatch, durable mission persistence, direct response import,
 or runtime permission enforcement is implemented.
 
+## Collaborative Coach Command — phase 2
+
+- Create 4-agent team generates separate training, nutrition, recovery and research
+  missions. Stage each into a fresh restricted Hermes session and manually import
+  each returned draft. Keep responses concise (roughly 600–800 UTF-8 bytes each);
+  combined reports plus review notes must fit the existing 6000-byte mission limit.
+- Accept all four drafts, then select a team mission and create Safety review.
+  Review the new safety draft separately; an accepted review does not establish safety.
+- Only after accepting the safety review can Commander synthesis be generated.
+  It uses accepted reports and review notes from the selected team only.
+- Rejected reports block synthesis. Start a new team to revise; there is no
+  automatic retry, agent provisioning, live parallel execution or independent
+  enforcement of Hermes permissions. All prompts still require explicit Send.
+
+## Body 3D
+
+Select Body 3D, rotate the schematic model, and choose a muscle using its
+dropdown or clickable region. The model uses projected 3D ellipsoids, not a
+validated anatomical mesh. Unlock or refresh Physique to see the last 30 days
+of private training history for the selected muscle. The catalog uses exact
+normalized exercise names and aliases; unrecognized exercises are counted as
+unclassified, never guessed. Primary/secondary counts may overlap across
+muscles and are not actual activation, physiological stress or effective-set
+estimates. Lock clears the loaded history.
+
+## Mobile Athlete Command
+
+Select Mobile, choose 1–365 days of check-ins/training history (default 90),
+optionally include accepted commander reports from this session, and create
+an encrypted HTML snapshot. It also includes the current contest target and
+all milestones. Review the counts, unlock the vault, choose a separate
+12+ character mobile passphrase, and select a new output file outside the
+Git checkout. The file contains ciphertext, not plaintext athlete records.
+
+Transfer the generated HTML privately to the phone, then open the trusted,
+unmodified file locally in a browser with JavaScript and Web Crypto support.
+Enter the mobile passphrase. Overview, Check-ins, Training, Prep and Feedback
+are read-only. Lock clears displayed content; hiding the page also locks it.
+The snapshot uses PBKDF2-SHA256 (600,000 iterations) and AES-256-GCM, no network
+requests, and no localStorage. No passphrase is saved. Mobile browser file
+opening and Web Crypto support vary; device testing remains required.
+Do not upload snapshots to GitHub, email them as a matter of routine, or open
+modified copies. A modified HTML file could steal the passphrase; CSP and
+encryption do not protect against a malicious replacement or compromised OS.
+Existing exports cannot be remotely revoked; delete old copies yourself.
+No live sync, native APK, remote server, write-back or push notifications.
+Snapshot encryption is distinct from the original Scrypt vault format.
+
 ## Tests
 `python -m unittest discover -s tests -p 'test_physique*.py' -v` after installing the optional dependency. GUI rendering and OS-level security need manual testing.
 
@@ -100,6 +148,6 @@ data. The general COG index and MCP should not ingest this directory.
 - Multi-athlete CRM: isolated tenants, role-based controls, consent/revocation,
   access audit, export/deletion, billing and independent security review.
 - AEGIS integration: redacted event categories without biomarker or athlete data.
-- Anatomy explorer, local voice check-ins, mobile UI, and camera comparison.
+- Anatomically detailed 3D mesh, local voice check-ins, native mobile application, live private sync and camera comparison.
 
 All examples are synthetic. The public repository must never contain private data.

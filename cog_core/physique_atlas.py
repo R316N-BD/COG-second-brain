@@ -60,7 +60,7 @@ def read_metadata(path):
     for line in reader:
         if len(line)!=3:raise ValueError("Unexpected metadata row.")
         fma,name,element=line
-        if not re.fullmatch(r"FMA\d+",fma) or not re.fullmatch(r"FJ\d+",element):continue
+        if not re.fullmatch(r"FMA\d+",fma) or not re.fullmatch(r"FJ\d+M?",element):continue
         item=concepts.setdefault(fma,{"name":name,"elements":set()})
         if item["name"]!=name:raise ValueError("Inconsistent concept names.")
         item["elements"].add(element)
@@ -110,7 +110,7 @@ def load_region(archive,metadata,concept_ids):
         entries={}
         for info in z.infolist():
             name=Path(info.filename).name
-            if not re.fullmatch(r"FJ\d+\.obj",name,re.I):continue
+            if not re.fullmatch(r"FJ\d+M?\.obj",name,re.I):continue
             key=name[:-4].upper()
             if key not in elements:continue
             if key in entries:raise ValueError("Duplicate element in archive.")

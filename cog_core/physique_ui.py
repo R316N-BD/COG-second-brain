@@ -101,7 +101,7 @@ def open_workspace(vault, parent=None, coach_stage=None):
     pb=ttk.Frame(prep,style="Physique.TFrame");pb.pack(fill="x")
     pt=table(prep,("Date","Milestone","Status"),(150,420,120))
     from .physique_coach_ui import mount_coach
-    clear_coach=mount_coach(pages["AI Coach"],stage=coach_stage)
+    clear_coach, coach_feedback=mount_coach(pages["AI Coach"],stage=coach_stage)
     privacy=pages["Privacy"]
     ttk.Label(privacy,text="Private by design",style="Physique.TLabel",font=("Segoe UI",18,"bold")).pack(anchor="w")
     ttk.Label(privacy,text="Encrypted at rest. No automatic upload, cloud analysis, MCP access or agent execution. Unlocking displays records locally; it is not protection against a compromised computer. Lock clears the displayed data and form fields. Passphrases are requested for every write and are not retained as a session credential. Keep a secure backup before upgrading; old versions cannot read a migrated v2 file.",style="Physique.TLabel",wraplength=800,justify="left").pack(anchor="w",pady=14)

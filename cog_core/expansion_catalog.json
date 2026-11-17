@@ -158,5 +158,13 @@
     "status": "extension",
     "route": "start-nexus.ps1",
     "detail": "User-local staged source installer; signed packages pending"
+  },
+  {
+    "id": "physique",
+    "name": "COG Physique",
+    "owner": "cog",
+    "status": "extension",
+    "route": "cog_core physique",
+    "detail": "Owner-only encrypted check-ins and contest target; specialist agents, clinical records and posing planned"
   }
 ]

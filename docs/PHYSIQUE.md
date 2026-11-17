@@ -79,16 +79,45 @@ or runtime permission enforcement is implemented.
   automatic retry, agent provisioning, live parallel execution or independent
   enforcement of Hermes permissions. All prompts still require explicit Send.
 
-## Body 3D
+## Body 3D — advanced educational explorer
 
-Select Body 3D, rotate the schematic model, and choose a muscle using its
-dropdown or clickable region. The model uses projected 3D ellipsoids, not a
-validated anatomical mesh. Unlock or refresh Physique to see the last 30 days
-of private training history for the selected muscle. The catalog uses exact
-normalized exercise names and aliases; unrecognized exercises are counted as
-unclassified, never guessed. Primary/secondary counts may overlap across
-muscles and are not actual activation, physiological stress or effective-set
-estimates. Lock clears the loaded history.
+The native Body 3D tab now has 30 named anatomical regions, original tessellated
+ellipsoid meshes, orthographic 3D camera rotation, shading, front/back/side presets,
+drag, tilt, zoom, surface/deep/all layers and region isolation. Click a visible
+region or use the muscle dropdown. Each region includes a short action description.
+Deep mode removes the base geometry to expose illustrative deeper regions.
+It is not a scanned body, validated anatomical atlas, skin model, or a simulation
+of muscle contractions, forces, joints or an individual's anatomy.
+
+Select 7, 14, 30, 90 or 365 days. The exercise relationships tab lists recognized
+primary and secondary exercises; training history shows recorded sets, repetitions,
+external load and relationship, unique training dates, last mapped exposure and
+the change from the preceding equal-length window. Heatmap colors represent
+relative counts for the selected period, not biological activation, recovery,
+injury risk or muscle growth. Teal indicates selection. Multiple regions may
+share the same set; never sum regional counts to calculate total workout sets.
+Left/right display is anatomical orientation only; the training log does not
+record side-specific effort, so the display cannot infer asymmetry.
+
+Exercise aliases are exact normalized matches. Custom movements without a mapping
+are counted as unclassified, not automatically assigned. The existing broad
+11-region API remains for compatibility; the detailed catalog has separate
+associations. The viewer is local and read-only, and Lock clears its loaded history.
+
+### Path to anatomical fidelity
+
+Reference anatomy for future asset import:
+- OpenStax Anatomy and Physiology 2e, chapter 11:
+  https://openstax.org/books/anatomy-and-physiology-2e/pages/11-chapter-review
+- BodyParts3D official dataset: https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html
+- BodyParts3D current license: https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html
+- Z-Anatomy model license: https://github.com/Z-Anatomy/Models-of-human-anatomy/blob/master/License.txt
+
+No external meshes have been bundled. A future import should pin exact asset
+versions, preserve attribution and license terms, validate anatomical IDs and
+mesh coordinates, and provide an independent anatomical review before release.
+The current 3D rendering is a stylized teaching model and has not been validated
+by an anatomist. No pose detection, personalized scanning or joint mechanics yet.
 
 ## Mobile Athlete Command
 

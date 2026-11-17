@@ -1,7 +1,7 @@
 """Native Physique dashboard. All private fields remain in the local process."""
 import datetime as dt
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog, filedialog
 from .physique import FIELDS, summary
 from . import physique_training as training
 
@@ -27,7 +27,7 @@ def open_workspace(vault, parent=None, coach_stage=None):
     tabs=ttk.Notebook(outer)
     tabs.pack(fill="both",expand=True)
     pages={}
-    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","AI Coach","Privacy"):
+    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","AI Coach","Body 3D","Mobile","Privacy"):
         page=ttk.Frame(tabs,style="Physique.TFrame",padding=16)
         tabs.add(page,text=name)
         pages[name]=page
@@ -102,6 +102,40 @@ def open_workspace(vault, parent=None, coach_stage=None):
     pt=table(prep,("Date","Milestone","Status"),(150,420,120))
     from .physique_coach_ui import mount_coach
     clear_coach, coach_feedback=mount_coach(pages["AI Coach"],stage=coach_stage)
+    from .physique_anatomy_ui import mount_anatomy
+    load_anatomy=mount_anatomy(pages["Body 3D"])
+    mobile=pages["Mobile"]
+    ttk.Label(mobile,text="MOBILE ATHLETE COMMAND",style="Physique.TLabel",font=("Segoe UI",18,"bold")).pack(anchor="w")
+    ttk.Label(mobile,text="Create an encrypted, read-only HTML snapshot for your phone. It contains selected history and contest milestones, plus optionally accepted commander drafts. Transfer the file privately and open only a trusted unmodified copy in a compatible local browser. No live synchronization or upload.",style="Physique.TLabel",wraplength=850,justify="left").pack(anchor="w",pady=12)
+    days_var=tk.StringVar(value="90")
+    feedback_var=tk.BooleanVar(value=False)
+    ttk.Label(mobile,text="Days of check-ins and training history (1–365)",style="Physique.TLabel").pack(anchor="w")
+    ttk.Entry(mobile,textvariable=days_var,width=10).pack(anchor="w",pady=5)
+    ttk.Checkbutton(mobile,text="Include accepted commander feedback from this session (reviewed, not clinical approval)",variable=feedback_var).pack(anchor="w",pady=8)
+    mobile_status=tk.StringVar(value="No snapshot exported this session.")
+    ttk.Label(mobile,textvariable=mobile_status,style="Physique.TLabel",wraplength=850).pack(anchor="w",pady=8)
+    def export_mobile():
+        from .physique_mobile import snapshot,write_snapshot
+        try:
+            days=int(days_var.get())
+            password=simpledialog.askstring("Physique vault","Vault passphrase:",show="*",parent=win)
+            if password is None:return
+            state=vault.read(password)
+            password=None
+            feedback=coach_feedback() if feedback_var.get() else []
+            data=snapshot(state,days,feedback)
+            if not messagebox.askyesno("Review export",f"Export {len(data['records'])} check-ins, {len(data['sets'])} sets, {len(data['milestones'])} milestones and {len(feedback)} accepted reports? The copy is not revocable. Use a separate passphrase and transfer privately.",parent=win):return
+            mobile_password=simpledialog.askstring("Mobile passphrase","Separate mobile passphrase (12+ characters):",show="*",parent=win)
+            if mobile_password is None:return
+            confirm=simpledialog.askstring("Confirm","Repeat mobile passphrase:",show="*",parent=win)
+            if confirm!=mobile_password:raise ValueError("Passphrases do not match.")
+            dest=filedialog.asksaveasfilename(parent=win,defaultextension=".html",filetypes=[("Encrypted HTML snapshot","*.html")],initialfile="cog-athlete-snapshot.html")
+            if not dest:return
+            write_snapshot(dest,data,mobile_password)
+            mobile_status.set("Encrypted snapshot created. Transfer privately; open offline. Browser support must be verified.")
+        except (ValueError,OSError) as exc:
+            messagebox.showerror("Mobile Athlete Command",str(exc),parent=win)
+    button(mobile,"Create encrypted mobile snapshot",export_mobile).pack(anchor="w",pady=8)
     privacy=pages["Privacy"]
     ttk.Label(privacy,text="Private by design",style="Physique.TLabel",font=("Segoe UI",18,"bold")).pack(anchor="w")
     ttk.Label(privacy,text="Encrypted at rest. No automatic upload, cloud analysis, MCP access or agent execution. Unlocking displays records locally; it is not protection against a compromised computer. Lock clears the displayed data and form fields. Passphrases are requested for every write and are not retained as a session credential. Keep a secure backup before upgrading; old versions cannot read a migrated v2 file.",style="Physique.TLabel",wraplength=800,justify="left").pack(anchor="w",pady=14)
@@ -139,6 +173,7 @@ def open_workspace(vault, parent=None, coach_stage=None):
     def render(state):
         s=summary(state);a=training.analytics(state)
         current["rows"]=sorted(state["records"],key=lambda r:r["date"])
+        load_anatomy(state["sets"])
         days=s["days_until_target"]
         values["target"].set("—" if days is None else (f"{days} d" if days>=0 else f"{-days} d past"))
         for k,metric,unit in (("weight","weight_kg"," kg"),("sleep","sleep_hours"," h")):
@@ -163,6 +198,8 @@ def open_workspace(vault, parent=None, coach_stage=None):
             if "date" in form:form["date"].insert(0,today)
     def lock():
         clear_coach()
+        load_anatomy(None)
+        feedback_var.set(False);days_var.set("90");mobile_status.set("Display locked. Previously exported files are not revoked.")
         current["rows"]=[]
         for v in values.values():v.set("—")
         for tree in (ct,tt,bt,pt):fill(tree,[])

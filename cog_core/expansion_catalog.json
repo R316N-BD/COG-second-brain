@@ -165,6 +165,6 @@
     "owner": "cog",
     "status": "extension",
     "route": "cog_core physique",
-    "detail": "Owner-only encrypted check-ins and contest target; specialist agents, clinical records and posing planned"
+    "detail": "Owner-only encrypted check-ins, workout set logging, best sets, descriptive charts and milestone planner; specialist agents, clinical records and posing planned"
   }
 ]

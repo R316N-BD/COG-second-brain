@@ -228,10 +228,10 @@ class Vault:
                 row["done"]=not row["done"]
             self._write(password,state)
 
-def run(data_dir, parent=None):
+def run(data_dir, parent=None, coach_stage=None):
     """Owner-operated dashboard; no agent access."""
     from .physique_ui import open_workspace
-    return open_workspace(Vault(data_dir),parent)
+    return open_workspace(Vault(data_dir),parent,coach_stage=coach_stage)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

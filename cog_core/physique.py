@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .paths import checked_child, default_data_dir, private_path
+from . import physique_training as training
 
 MAX_BYTES = 2_000_000
 MAGIC = b"COGPHYS1"
@@ -58,8 +59,13 @@ def validate_record(record):
     return dict(record)
 
 def validate_state(state):
-    if not isinstance(state, dict) or set(state) != {"version", "target_date", "records"} or state["version"] != 1:
+    if not isinstance(state, dict):
         raise ValueError("Unsupported physique vault.")
+    if state.get("version")==1 and set(state)=={"version","target_date","records"}:
+        state=dict(state,version=2,sets=[],milestones=[])
+    if state.get("version")!=2 or set(state)!={"version","target_date","records","sets","milestones"}:
+        raise ValueError("Unsupported physique vault.")
+    training.validate_collections(state)
     if state["target_date"] is not None:
         _date(state["target_date"])
     records = state["records"]
@@ -74,7 +80,7 @@ def validate_state(state):
     return state
 
 def summary(state, today=None):
-    validate_state(state)
+    state = validate_state(state)
     today = today or dt.date.today()
     rows = sorted(state["records"], key=lambda r:r["date"])
     def average(field, start, end):
@@ -130,7 +136,7 @@ class Vault:
             raise ValueError("Incorrect passphrase or damaged vault.") from None
 
     def _write(self, password, state):
-        validate_state(state)
+        state = validate_state(state)
         AESGCM, _, _ = _crypto()
         salt, nonce = os.urandom(16), os.urandom(12)
         payload = json.dumps(state, separators=(",", ":"), allow_nan=False).encode()
@@ -152,7 +158,7 @@ class Vault:
         with self.exclusive():
             if self.path.exists():
                 raise ValueError("Vault already exists.")
-            self._write(password, {"version":1,"target_date":None,"records":[]})
+            self._write(password, {"version":2,"target_date":None,"records":[],"sets":[],"milestones":[]})
 
     def add(self, password, record):
         record = validate_record(record)
@@ -190,69 +196,42 @@ class Vault:
             state["target_date"] = date
             self._write(password, state)
 
+    def add_set(self,password,row):
+        training.validate_set(row)
+        with self.exclusive():
+            state=self.read(password)
+            state["sets"].append(row)
+            self._write(password,state)
+
+    def add_milestone(self,password,row):
+        training.validate_milestone(row)
+        with self.exclusive():
+            state=self.read(password)
+            state["milestones"].append(row)
+            self._write(password,state)
+
+    def change_item(self,password,collection,ident,action):
+        training.ident(ident)
+        if collection not in ("sets","milestones") or action not in ("delete","toggle"):
+            raise ValueError("Unsupported change.")
+        if action=="toggle" and collection!="milestones":
+            raise ValueError("Only milestones can be toggled.")
+        with self.exclusive():
+            state=self.read(password)
+            rows=state[collection]
+            row=next((r for r in rows if r["id"]==ident),None)
+            if row is None:
+                raise ValueError("Record no longer exists.")
+            if action=="delete":
+                state[collection]=[r for r in rows if r["id"]!=ident]
+            else:
+                row["done"]=not row["done"]
+            self._write(password,state)
+
 def run(data_dir, parent=None):
-    """Owner-operated desktop panel. No background agent or cloud transmission."""
-    import tkinter as tk
-    from tkinter import ttk, messagebox, simpledialog
-    win = tk.Toplevel(parent) if parent else tk.Tk()
-    win.title("COG PHYSIQUE | Local workspace")
-    win.geometry("760x650")
-    vault = Vault(data_dir)
-    frame = ttk.Frame(win, padding=18)
-    frame.pack(fill="both", expand=True)
-    ttk.Label(frame, text="COG PHYSIQUE", font=("Segoe UI", 20, "bold")).pack(anchor="w")
-    ttk.Label(frame, text="Encrypted local records · no AI access · kg / hours / minutes", wraplength=660).pack(anchor="w", pady=5)
-    form = ttk.Frame(frame)
-    form.pack(fill="x", pady=12)
-    labels = {"date":"Date (YYYY-MM-DD)", "weight_kg":"Weight (kg)", "sleep_hours":"Sleep (hours)",
-              "training_minutes":"Training (minutes)", "adherence_pct":"Self-reported adherence (%)"}
-    fields = {}
-    for idx, (key, label) in enumerate(labels.items()):
-        ttk.Label(form,text=label).grid(row=idx,column=0,sticky="w",padx=4,pady=4)
-        field = ttk.Entry(form,width=24)
-        field.grid(row=idx,column=1,sticky="w",padx=4,pady=4)
-        fields[key] = field
-    fields["date"].insert(0,dt.date.today().isoformat())
-    report = tk.Text(frame, height=13, wrap="word", state="disabled")
-    report.pack(fill="both", expand=True, pady=8)
-    def show(result):
-        report.configure(state="normal")
-        report.delete("1.0","end")
-        report.insert("end",json.dumps(result,indent=2))
-        report.configure(state="disabled")
-    def act(action):
-        try:
-            password = simpledialog.askstring("Physique vault","Local vault passphrase:",show="*",parent=win)
-            if password is None:
-                return
-            if action=="init":
-                confirm = simpledialog.askstring("Confirm","Repeat passphrase:",show="*",parent=win)
-                if password!=confirm:
-                    raise ValueError("Passphrases do not match.")
-                vault.initialize(password)
-            elif action in ("add","replace"):
-                row = {"date":fields["date"].get()}
-                for key in FIELDS-{"date"}:
-                    value=fields[key].get().strip()
-                    row[key]=float(value) if value else None
-                (vault.add if action=="add" else vault.replace)(password,row)
-            elif action=="delete":
-                if not messagebox.askyesno("Delete record","Delete the selected date?",parent=win):
-                    return
-                vault.delete(password,fields["date"].get())
-            elif action=="target":
-                target=simpledialog.askstring("Contest target","YYYY-MM-DD; blank clears target",parent=win)
-                if target is None:
-                    return
-                vault.set_target(password,target.strip() or None)
-            show(summary(vault.read(password)))
-        except (ValueError,OSError) as exc:
-            messagebox.showerror("Physique",str(exc),parent=win)
-    for action, label in (("init","Create vault"),("add","Save check-in"),("replace","Replace date"),
-                          ("delete","Delete date"),("target","Contest target"),("summary","Refresh trends")):
-        ttk.Button(frame,text=label,command=lambda a=action:act(a)).pack(side="left",padx=2,pady=4)
-    if parent is None:
-        win.mainloop()
+    """Owner-operated dashboard; no agent access."""
+    from .physique_ui import open_workspace
+    return open_workspace(Vault(data_dir),parent)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

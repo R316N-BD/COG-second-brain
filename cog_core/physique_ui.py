@@ -5,7 +5,7 @@ from tkinter import ttk, messagebox, simpledialog
 from .physique import FIELDS, summary
 from . import physique_training as training
 
-def open_workspace(vault, parent=None):
+def open_workspace(vault, parent=None, coach_stage=None):
     win=tk.Toplevel(parent) if parent else tk.Tk()
     win.title("COG PHYSIQUE | Athlete command")
     win.geometry("1100x760")
@@ -27,7 +27,7 @@ def open_workspace(vault, parent=None):
     tabs=ttk.Notebook(outer)
     tabs.pack(fill="both",expand=True)
     pages={}
-    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","Privacy"):
+    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","AI Coach","Privacy"):
         page=ttk.Frame(tabs,style="Physique.TFrame",padding=16)
         tabs.add(page,text=name)
         pages[name]=page
@@ -100,6 +100,8 @@ def open_workspace(vault, parent=None):
     pf=fields(prep,[("target","Contest target",""),("date","Milestone date",today),("title","Milestone","")])
     pb=ttk.Frame(prep,style="Physique.TFrame");pb.pack(fill="x")
     pt=table(prep,("Date","Milestone","Status"),(150,420,120))
+    from .physique_coach_ui import mount_coach
+    clear_coach=mount_coach(pages["AI Coach"],stage=coach_stage)
     privacy=pages["Privacy"]
     ttk.Label(privacy,text="Private by design",style="Physique.TLabel",font=("Segoe UI",18,"bold")).pack(anchor="w")
     ttk.Label(privacy,text="Encrypted at rest. No automatic upload, cloud analysis, MCP access or agent execution. Unlocking displays records locally; it is not protection against a compromised computer. Lock clears the displayed data and form fields. Passphrases are requested for every write and are not retained as a session credential. Keep a secure backup before upgrading; old versions cannot read a migrated v2 file.",style="Physique.TLabel",wraplength=800,justify="left").pack(anchor="w",pady=14)
@@ -160,6 +162,7 @@ def open_workspace(vault, parent=None):
                 entry.delete(0,"end")
             if "date" in form:form["date"].insert(0,today)
     def lock():
+        clear_coach()
         current["rows"]=[]
         for v in values.values():v.set("—")
         for tree in (ct,tt,bt,pt):fill(tree,[])

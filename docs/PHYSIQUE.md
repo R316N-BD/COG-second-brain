@@ -4,6 +4,10 @@ This optional Nexus division uses Hermes-first design but introduces no second r
 The current MVP is owner-operated; Hermes, MCP, general memory, cloud models and
 external coaches cannot access the vault through any new tool.
 
+## Browser design preview
+
+Open [preview/physique.html](../preview/physique.html) locally in a browser. The preview uses synthetic data and never saves anything or contacts Hermes. It is not the native encrypted vault UI.
+
 ## Run
 From the feature checkout, initialize COG if needed:
 ```powershell

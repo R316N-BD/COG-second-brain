@@ -104,20 +104,51 @@ are counted as unclassified, not automatically assigned. The existing broad
 11-region API remains for compatibility; the detailed catalog has separate
 associations. The viewer is local and read-only, and Lock clears its loaded history.
 
-### Path to anatomical fidelity
+### BodyParts3D Atlas — official source meshes
 
-Reference anatomy for future asset import:
-- OpenStax Anatomy and Physiology 2e, chapter 11:
-  https://openstax.org/books/anatomy-and-physiology-2e/pages/11-chapter-review
-- BodyParts3D official dataset: https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html
-- BodyParts3D current license: https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html
-- Z-Anatomy model license: https://github.com/Z-Anatomy/Models-of-human-anatomy/blob/master/License.txt
+The separate Atlas tab imports the official 4.0 IS-A reduced OBJ ZIP and its
+matching element table directly from local files. Download these from
+https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html :
 
-No external meshes have been bundled. A future import should pin exact asset
-versions, preserve attribution and license terms, validate anatomical IDs and
-mesh coordinates, and provide an independent anatomical review before release.
-The current 3D rendering is a stylized teaching model and has not been validated
-by an anatomist. No pose detection, personalized scanning or joint mechanics yet.
+- `isa_BP3D_4.0_obj_99.zip` (official IS-A polygon data, about 136 MB).
+- `isa_element_parts.txt` (official IS-A compound-to-element table, about 1.1 MB).
+- Optional reference: `isa_parts_list_e.txt` for concept names.
+
+Choose the ZIP and metadata in Atlas, select a preset, and press Import selected
+group. The 30 presets use exact FMA concepts, including bilateral and mirrored
+element identifiers ending in M. Each imported group is centered and fitted
+using one shared transform, preserving relative geometry inside that group.
+Camera drag, front/side/back presets, zoom, source-axis options and front flip
+are provided. The viewer processes one group at a time; it does not yet assemble
+a full-body scene or map the imported mesh to exercise history. A 24,000-triangle
+budget rejects overly large groups. It reads selected OBJ members without
+extracting archive paths, loading materials, accessing networks or running code.
+Metadata and each mesh receive SHA-256 fingerprints; these are not signatures.
+Select the official matching version yourself; filenames and hashes alone do
+not authenticate the publisher. Only synthetic test meshes are included in tests.
+
+BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International.
+License: https://creativecommons.org/licenses/by/4.0/
+Provider terms: https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html
+Paper: https://doi.org/10.1093/nar/gkn613
+Adaptations: triangle fan conversion where necessary, coordinate normalization,
+camera projection and display colors. No source mesh is committed or redistributed.
+The source depicts a reference adult male, not personal anatomy. Official
+archives are substantially polygon-reduced. Actual archive compatibility,
+surface fidelity, axis orientation and rendering performance require live testing.
+
+### Movement Lab
+
+The separate Movement tab contains four deterministic educational animations:
+biceps curl, squat, Romanian deadlift and overhead press. Play/pause, speed
+and phase scrubbing are available. The planar model preserves segment lengths
+and computes interior joint angles using the clamped dot product and arccos.
+It has no rigged anatomical meshes, recorded movement data, force estimates,
+muscle activation, form scoring, personalized range-of-motion recommendations
+or clinical assessment. The example paths are authored illustrations, not
+validated movement prescriptions. Joint angles are geometric interior angles
+(not necessarily clinical flexion angles). Tests cover known angles, degenerate
+inputs, closed animation cycles and constant segment lengths.
 
 ## Mobile Athlete Command
 

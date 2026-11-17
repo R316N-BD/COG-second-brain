@@ -226,6 +226,32 @@ def run(data_dir):
     def button(parent,label,action,side="left"):
         ttk.Button(parent,text=label,command=action).pack(side=side,padx=4)
 
+    def stage_coach_prompt(prompt):
+        # Staging is local only; the existing Send action remains the explicit network boundary.
+        if not state["online"] or state["busy"] or state["pending"] or state["uncertain"] or not profile.get():
+            messagebox.showwarning("Coach Command","Connect and select an idle, restricted Hermes profile first.",parent=root)
+            return False
+        if state["session"] is not None:
+            messagebox.showwarning("Coach Command","Use New session in Nexus before staging a coach mission.",parent=root)
+            return False
+        if composer.get("1.0","end-1c").strip():
+            messagebox.showwarning("Coach Command","Clear or save the existing Nexus composer draft first.",parent=root)
+            return False
+        composer.insert("1.0",prompt)
+        tabs.select(chat)
+        root.deiconify()
+        root.lift()
+        status.set("Coach draft staged — review profile and provider before Send")
+        return True
+
+    def open_physique():
+        from . import physique
+        try:
+            physique.run(data, parent=root, coach_stage=stage_coach_prompt)
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Physique", str(exc), parent=root)
+
+    button(connection,"Physique",open_physique)
     button(connection,"Connect",connect)
     button(connection,"Refresh",refresh)
     button(connection,"Quick panel",panel.deiconify,"right")

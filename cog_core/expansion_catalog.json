@@ -158,5 +158,13 @@
     "status": "extension",
     "route": "start-nexus.ps1",
     "detail": "User-local staged source installer; signed packages pending"
+  },
+  {
+    "id": "physique",
+    "name": "COG Physique",
+    "owner": "cog",
+    "status": "extension",
+    "route": "cog_core physique",
+    "detail": "Encrypted training, reviewed coach teams, 30-region history explorer, official BodyParts3D local subset importer, four schematic exercise animations and encrypted mobile snapshots; full-body atlas assembly and rigged meshes planned"
   }
 ]

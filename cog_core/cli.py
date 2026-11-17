@@ -165,6 +165,7 @@ def main(argv=None):
     subs.add_parser("nexus", help="Launch Hermes-connected COG Nexus.")
     hermes = subs.add_parser("hermes-config", help="Print COG MCP launcher configuration.")
     hermes.add_argument("--profile", default="hermes-research")
+    subs.add_parser("physique")
     subs.add_parser("expansion-catalog")
     workflow = subs.add_parser("workflow-run")
     workflow.add_argument("definition", type=Path)
@@ -243,6 +244,10 @@ def main(argv=None):
         elif args.command == "maintenance":
             from . import maintenance
             result = maintenance.run(args.data_dir, args.action)
+        elif args.command == "physique":
+            from . import physique
+            physique.run(args.data_dir)
+            return 0
         elif args.command == "nexus":
             from . import nexus
             nexus.run(args.data_dir)

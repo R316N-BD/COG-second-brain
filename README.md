@@ -24,6 +24,8 @@ graph LR
 
 ## Quick Start
 
+**COG Physique:** [Private bodybuilding workspace](docs/PHYSIQUE.md) — optional encrypted check-ins, contest countdown and descriptive trends.
+
 **Hermes-first expansion:** [20-module architecture and local workflow tools](docs/EXPANSION.md).
 
 **COG Nexus:** [Hermes-connected desktop companion](docs/NEXUS.md) — floating command panel, live workforce, dedicated browser attachment and visual replies.

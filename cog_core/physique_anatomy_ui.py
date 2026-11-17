@@ -1,7 +1,7 @@
 """Interactive shaded 3D body explorer with local, read-only training analytics."""
 import tkinter as tk
 from tkinter import ttk
-from .physique_body_detail import REGIONS,body_counts
+from .physique_body_detail import REGIONS,body_counts,period_comparison
 from .physique_body_mesh import scene
 
 def mount_anatomy(page):
@@ -87,6 +87,8 @@ def mount_anatomy(page):
             summary=(f"{period.get()} days: {report['primary']} primary / {report['secondary']} secondary sets"
                      f" • {report['sessions']} training dates\nLast recognized exposure: {report['last_date'] or 'none'}"
                      f" • Unclassified sets: {report['unclassified']}")
+            comparison=period_comparison(state["sets"],k,int(period.get()))
+            summary+=f"\nChange vs preceding equal period: {comparison['primary_change']:+d} primary / {comparison['secondary_change']:+d} secondary"
         info.set(name+" · "+group.replace("_"," ")+"\n"+description+"\n\n"+summary)
         ht.delete(*ht.get_children());et.delete(*et.get_children())
         for row in report["rows"]:ht.insert("","end",values=row)
@@ -108,9 +110,9 @@ def mount_anatomy(page):
     def release(event):
         d=state["drag"];state["drag"]=None
         if d and abs(event.x-d[0])+abs(event.y-d[1])<5:
-            for item in reversed(canvas.find_overlapping(event.x,event.y,event.x,event.y)):
-                if item in state["items"]:
-                    key,_=state["items"][item];region.set(REGIONS[key][1]);break
+            hits=canvas.find_overlapping(event.x,event.y,event.x,event.y)
+            if hits and hits[-1] in state["items"]:
+                key,_=state["items"][hits[-1]];region.set(REGIONS[key][1])
     def wheel(event):
         direction=1 if getattr(event,"delta",0)>0 or getattr(event,"num",0)==4 else -1
         zoom.set(max(.65,min(1.8,zoom.get()+direction*.1)))

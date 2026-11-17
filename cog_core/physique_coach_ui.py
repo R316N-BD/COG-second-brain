@@ -69,6 +69,12 @@ def mount_coach(page, stage=None):
         m=queue.create(role.get(),task.get("1.0","end-1c"))
         update(m);detail.select(prompt_page)
         task.delete("1.0","end")
+    def team():
+        for m in queue.create_team(task.get("1.0","end-1c")):update(m)
+        task.delete("1.0","end");detail.select(prompt_page)
+    def synthesize(role):
+        if not messagebox.askyesno("Review handoff","Build a new mission from the accepted reports in this team? Inspect its full contents before sending to Hermes.",parent=root):return
+        update(queue.synthesize(chosen().id,role));detail.select(prompt_page)
     def handoff():
         m=chosen()
         if m.state!="draft":raise ValueError("Create a new mission to stage again.")
@@ -92,9 +98,9 @@ def mount_coach(page, stage=None):
         status.set("Local session queue cleared • previously staged or sent messages are not recalled")
     def confirm_clear():
         if messagebox.askyesno("Clear session","Remove all local missions and drafts? This cannot recall messages in Nexus or Hermes.",parent=root):clear()
-    for parent,label,action in ((controls,"Create mission",create),(controls,"Stage in Nexus",handoff),(controls,"Clear queue",confirm_clear),
+    for parent,label,action in ((controls,"Create mission",create),(controls,"Create 4-agent team",team),(controls,"Stage in Nexus",handoff),(controls,"Clear queue",confirm_clear),
                                 (actions,"Save pasted reply",save_reply),(actions,"Accept reviewed draft",lambda:decide("accepted")),
-                                (actions,"Reject draft",lambda:decide("rejected"))):
+                                (actions,"Reject draft",lambda:decide("rejected")),(actions,"Safety review",lambda:synthesize("safety")),(actions,"Commander synthesis",lambda:synthesize("commander"))):
         ttk.Button(parent,text=label,command=lambda f=action:safe(f),style="Physique.TButton").pack(side="left",padx=3)
     ttk.Label(page,text="Paste the Hermes reply into Returned draft, then Save pasted reply. Review is not clinical approval. No queue persistence; switching missions discards unsaved reply edits.",style=style,wraplength=900).pack(anchor="w",pady=3)
-    return clear
+    return clear, queue.accepted_feedback

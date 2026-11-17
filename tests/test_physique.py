@@ -1,4 +1,5 @@
 import datetime as dt
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,6 +26,7 @@ class PhysiqueTest(unittest.TestCase):
         self.assertEqual(result["metrics"]["weight_kg"]["change"],-3)
         self.assertEqual(result["metrics"]["sleep_hours"]["last_7_days"]["count"],0)
 
+    @unittest.skipUnless(importlib.util.find_spec("cryptography"), "optional Physique dependency not installed")
     def test_encryption_and_mutations(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)

@@ -1,6 +1,6 @@
 """Original educational region catalog and conservative exercise associations."""
 import datetime as dt
-from .physique_anatomy import relationship, normalize, EXERCISES, ALIASES
+from .physique_anatomy import normalize, ALIASES
 from .physique_training import date
 
 # Broad group, common name, action summary. These are educational subdivisions,
@@ -105,3 +105,12 @@ def region_history(sets,region,days=30,today=None):
 
 def body_counts(sets,days=30,today=None):
     return {k:region_history(sets,k,days,today) for k in REGIONS}
+
+
+def period_comparison(sets,region,days=30,today=None):
+    today=today or dt.date.today()
+    current=region_history(sets,region,days,today)
+    prior=region_history(sets,region,days,today-dt.timedelta(days=days))
+    return {"current":current,"prior":prior,
+            "primary_change":current["primary"]-prior["primary"],
+            "secondary_change":current["secondary"]-prior["secondary"]}

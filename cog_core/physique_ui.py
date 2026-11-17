@@ -27,7 +27,7 @@ def open_workspace(vault, parent=None):
     tabs=ttk.Notebook(outer)
     tabs.pack(fill="both",expand=True)
     pages={}
-    for name in ("Command","Check-ins","Training log","Prep planner","Privacy"):
+    for name in ("Command","Check-ins","Training log","Personal bests","Prep planner","Privacy"):
         page=ttk.Frame(tabs,style="Physique.TFrame",padding=16)
         tabs.add(page,text=name)
         pages[name]=page
@@ -93,6 +93,9 @@ def open_workspace(vault, parent=None):
     training_detail=tk.StringVar(value="Unlock to review training volume.")
     ttk.Label(train,textvariable=training_detail,style="Physique.TLabel",wraplength=900).pack(anchor="w",pady=5)
     tt=table(train,("Date","Exercise","Reps","Load kg","RPE"),(120,260,90,110,90))
+    best=pages["Personal bests"]
+    ttk.Label(best,text="Heaviest recorded set per exercise (ties: more reps). Not estimated 1RM.",style="Physique.TLabel",wraplength=850).pack(anchor="w",pady=5)
+    bt=table(best,("Exercise","Load kg","Reps","Date"),(260,140,100,150))
     prep=pages["Prep planner"]
     pf=fields(prep,[("target","Contest target",""),("date","Milestone date",today),("title","Milestone","")])
     pb=ttk.Frame(prep,style="Physique.TFrame");pb.pack(fill="x")
@@ -146,6 +149,7 @@ def open_workspace(vault, parent=None):
         training_detail.set(f"Last 7 days: {a['current']['sessions']} sessions • {a['current']['sets']} sets • {a['current']['volume_kg']:,.1f} kg external-load volume | Prior 7 days: {a['prior']['volume_kg']:,.1f} kg")
         fill(ct,[(r["date"],[fmt(r[k]) for k in ("date","weight_kg","sleep_hours","training_minutes","adherence_pct")]) for r in reversed(current["rows"])])
         fill(tt,[(r["id"],[fmt(r[k]) for k in ("date","exercise","reps","weight_kg","rpe")]) for r in sorted(state["sets"],key=lambda r:r["date"],reverse=True)])
+        fill(bt,[(r["id"],(r["exercise"],r["weight_kg"],r["reps"],r["date"])) for r in a["best_sets"]])
         fill(pt,[(r["id"],(r["date"],r["title"],"Complete" if r["done"] else "Open")) for r in a["milestones"]])
         pf["target"].delete(0,"end");pf["target"].insert(0,state["target_date"] or "")
         plot(current["rows"])
@@ -158,7 +162,7 @@ def open_workspace(vault, parent=None):
     def lock():
         current["rows"]=[]
         for v in values.values():v.set("—")
-        for tree in (ct,tt,pt):fill(tree,[])
+        for tree in (ct,tt,bt,pt):fill(tree,[])
         clear_fields();chart.delete("all")
         detail.set("Unlock to review your records.")
         training_detail.set("Unlock to review training volume.")

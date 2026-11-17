@@ -226,6 +226,14 @@ def run(data_dir):
     def button(parent,label,action,side="left"):
         ttk.Button(parent,text=label,command=action).pack(side=side,padx=4)
 
+    def open_physique():
+        from . import physique
+        try:
+            physique.run(data, parent=root)
+        except (ValueError, OSError) as exc:
+            messagebox.showerror("Physique", str(exc), parent=root)
+
+    button(connection,"Physique",open_physique)
     button(connection,"Connect",connect)
     button(connection,"Refresh",refresh)
     button(connection,"Quick panel",panel.deiconify,"right")

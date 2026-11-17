@@ -1,78 +1,128 @@
-"""Rotatable schematic muscle explorer, not an anatomical mesh or medical model."""
-import math
+"""Interactive shaded 3D body explorer with local, read-only training analytics."""
 import tkinter as tk
 from tkinter import ttk
-from .physique_anatomy import MUSCLES,muscle_history
+from .physique_body_detail import REGIONS,body_counts
+from .physique_body_mesh import scene
 
-# Ellipsoids in normalized 3D coordinates: label,x,y,z,rx,ry,rz.
-PARTS=[("",0,0.48,0,.16,.17,.14),("",0,.83,0,.22,.27,.13),
-       ("",0,1.17,0,.18,.19,.13)]
-for s in (-1,1):
-    PARTS += [
-        ("chest",s*.11,.78,.10,.12,.10,.065),
-        ("delts",s*.25,.73,0,.10,.12,.12),
-        ("lats",s*.16,.95,-.10,.10,.19,.06),
-        ("upper_back",s*.09,.77,-.12,.10,.14,.06),
-        ("biceps",s*.31,.94,.07,.068,.14,.06),
-        ("triceps",s*.31,.94,-.07,.075,.14,.065),
-        ("",s*.36,1.19,0,.065,.14,.07),
-        ("",s*.39,1.37,0,.045,.08,.04),
-        ("abs",s*.055,1.03,.12,.06,.19,.04),
-        ("glutes",s*.10,1.24,-.10,.105,.12,.08),
-        ("quads",s*.11,1.52,.07,.095,.23,.08),
-        ("hamstrings",s*.11,1.52,-.07,.09,.23,.08),
-        ("",s*.11,1.79,0,.06,.09,.06),
-        ("calves",s*.11,1.98,-.035,.073,.19,.08),
-        ("",s*.11,2.19,.06,.075,.06,.12)]
 def mount_anatomy(page):
-    style="Physique.TLabel"
-    ttk.Label(page,text="BODY INTELLIGENCE • Rotatable 3D schematic",style=style,font=("Segoe UI",16,"bold")).pack(anchor="w")
-    ttk.Label(page,text="Select a region, rotate the model, or inspect the last 30 days of recognized exercise history. Not a clinical anatomy model.",style=style,wraplength=900).pack(anchor="w")
-    top=ttk.Frame(page,style="Physique.TFrame");top.pack(fill="x",pady=8)
-    muscle=tk.StringVar(value="chest")
-    picker=ttk.Combobox(top,textvariable=muscle,values=tuple(MUSCLES),state="readonly",width=18);picker.pack(side="left")
-    angle=tk.DoubleVar(value=0)
-    ttk.Label(top,text="Rotate",style=style).pack(side="left",padx=8)
-    slider=ttk.Scale(top,from_=0,to=360,variable=angle,orient="horizontal");slider.pack(side="left",fill="x",expand=True)
+    style="Physique.TLabel"; frame_style="Physique.TFrame"
+    ttk.Label(page,text="BODY INTELLIGENCE / 3D muscle atlas",style=style,font=("Segoe UI",16,"bold")).pack(anchor="w")
+    ttk.Label(page,text="Original schematic geometry, not a clinical atlas. Counts describe recognized exercise relationships, not muscle activation or recovery.",style=style,wraplength=950).pack(anchor="w")
+    top=ttk.Frame(page,style=frame_style);top.pack(fill="x",pady=5)
+    names={v[1]:k for k,v in REGIONS.items()}
+    region=tk.StringVar(value=REGIONS["upper_pec"][1])
+    picker=ttk.Combobox(top,textvariable=region,values=tuple(names),state="readonly",width=27);picker.pack(side="left",padx=3)
+    period=tk.StringVar(value="30")
+    ttk.Combobox(top,textvariable=period,values=("7","14","30","90","365"),state="readonly",width=5).pack(side="left")
+    ttk.Label(top,text="days",style=style).pack(side="left",padx=3)
+    layer=tk.StringVar(value="surface")
+    ttk.Combobox(top,textvariable=layer,values=("surface","deep","all"),state="readonly",width=8).pack(side="left",padx=4)
+    mode=tk.StringVar(value="Anatomy")
+    ttk.Combobox(top,textvariable=mode,values=("Anatomy","Primary sets","Secondary sets"),state="readonly",width=15).pack(side="left",padx=4)
+    isolate=tk.BooleanVar(value=False)
+    ttk.Checkbutton(top,text="Isolate",variable=isolate).pack(side="left",padx=4)
+    controls=ttk.Frame(page,style=frame_style);controls.pack(fill="x")
+    yaw=tk.DoubleVar(value=0);pitch=tk.DoubleVar(value=0);zoom=tk.DoubleVar(value=1)
+    def orient(a,b=0):
+        yaw.set(a);pitch.set(b)
+    for text,a in (("Front",0),("Back",180),("Left",90),("Right",270)):
+        ttk.Button(controls,text=text,command=lambda x=a:orient(x)).pack(side="left",padx=2)
+    ttk.Button(controls,text="Reset",command=lambda:(orient(0),zoom.set(1))).pack(side="left",padx=2)
+    ttk.Label(controls,text="Zoom",style=style).pack(side="left",padx=6)
+    ttk.Scale(controls,from_=.65,to=1.8,variable=zoom).pack(side="left",fill="x",expand=True)
     split=ttk.Panedwindow(page,orient="horizontal");split.pack(fill="both",expand=True)
-    left=ttk.Frame(split,style="Physique.TFrame");right=ttk.Frame(split,style="Physique.TFrame")
+    left=ttk.Frame(split,style=frame_style);right=ttk.Frame(split,style=frame_style)
     split.add(left,weight=2);split.add(right,weight=3)
-    canvas=tk.Canvas(left,bg="#101c2b",highlightthickness=0,width=360,height=420);canvas.pack(fill="both",expand=True)
-    info=tk.StringVar();ttk.Label(right,textvariable=info,style=style,wraplength=540,justify="left").pack(anchor="w")
-    tree=ttk.Treeview(right,columns=("date","exercise","reps","kg","role"),show="headings",style="Physique.Treeview")
-    for key,width in (("date",95),("exercise",155),("reps",45),("kg",55),("role",85)):
-        tree.heading(key,text=key.title());tree.column(key,width=width,minwidth=35)
-    tree.pack(fill="both",expand=True,pady=8)
-    state={"sets":[],"unlocked":False}
-    def draw(*_):
-        canvas.delete("all")
+    canvas=tk.Canvas(left,bg="#101c2b",highlightthickness=0,width=360,height=440);canvas.pack(fill="both",expand=True)
+    legend=tk.StringVar(value="Drag to rotate • click a region • mouse wheel to zoom")
+    ttk.Label(left,textvariable=legend,style=style,wraplength=400).pack(anchor="w")
+    info=tk.StringVar();ttk.Label(right,textvariable=info,style=style,wraplength=500,justify="left").pack(anchor="w",pady=5)
+    detail=ttk.Notebook(right);detail.pack(fill="both",expand=True)
+    history=ttk.Frame(detail);exercises=ttk.Frame(detail)
+    detail.add(history,text="Training history");detail.add(exercises,text="Exercise relationships")
+    def table(parent,columns):
+        tree=ttk.Treeview(parent,columns=[k for k,_ in columns],show="headings",style="Physique.Treeview")
+        for k,w in columns:tree.heading(k,text=k.title());tree.column(k,width=w,minwidth=40)
+        scroll=ttk.Scrollbar(parent,orient="vertical",command=tree.yview)
+        tree.configure(yscrollcommand=scroll.set);scroll.pack(side="right",fill="y");tree.pack(fill="both",expand=True)
+        return tree
+    ht=table(history,(("date",95),("exercise",140),("reps",45),("kg",55),("role",85)))
+    et=table(exercises,(("exercise",220),("relationship",120)))
+    state={"sets":[],"unlocked":False,"reports":{},"pending":False,"items":{},"drag":None}
+    def selected():return names[region.get()]
+    def color(key,light):
+        if not key:base=(43,58,76)
+        elif key==selected():base=(42,225,194)
+        elif mode.get()!="Anatomy" and state["unlocked"]:
+            metric="primary" if mode.get()=="Primary sets" else "secondary"
+            maximum=max((r[metric] for r in state["reports"].values()),default=0)
+            v=state["reports"].get(key,{}).get(metric,0)
+            f=v/maximum if maximum else 0
+            base=tuple(int(a+(b-a)*f) for a,b in zip((49,64,83),(246,155,66)))
+        else:base=(160,84,81)
+        factor=.48+.52*light
+        return "#"+"".join(f"{int(v*factor):02x}" for v in base)
+    def draw():
+        state["pending"]=False
+        canvas.delete("all");state["items"].clear()
         w=max(canvas.winfo_width(),160);h=max(canvas.winfo_height(),200)
-        scale=min(w/1.05,h/2.05);origin=h*.08-.30*scale
-        theta=math.radians(angle.get());c=math.cos(theta);s=math.sin(theta)
-        shapes=[]
-        for key,x,y,z,rx,ry,rz in PARTS:
-            xx=x*c+z*s;depth=-x*s+z*c
-            radius=math.sqrt((rx*c)**2+(rz*s)**2)
-            shapes.append((depth,key,xx,y,radius,ry))
-        for depth,key,x,y,rx,ry in sorted(shapes):
-            cx=w/2+x*scale;cy=origin+y*scale
-            color="#36ddc7" if key==muscle.get() else "#46617b" if key else "#28384c"
-            item=canvas.create_oval(cx-rx*scale,cy-ry*scale,cx+rx*scale,cy+ry*scale,fill=color,outline="#0b1320",width=2)
-            if key:canvas.tag_bind(item,"<Button-1>",lambda event,k=key:muscle.set(k))
-        canvas.create_text(w/2,h-12,text=f"Rotation {angle.get():.0f}° · illustrative model",fill="#9db2ca")
-    def refresh(*_):
-        key=muscle.get();name,description=MUSCLES[key]
-        report=muscle_history(state["sets"],key)
-        history=(f"30-day history: {report['primary']} primary / {report['secondary']} secondary sets; "
-                 f"{report['unclassified']} unclassified sets across all exercises.") if state["unlocked"] else "Unlock Physique to view your history."
-        info.set(name+"\n"+description+"\n\n"+history+"\n\nRecognized exercises: "+", ".join(report["exercises"]))
-        tree.delete(*tree.get_children())
-        for row in report["rows"]:tree.insert("","end",values=row)
-        draw()
-    muscle.trace_add("write",refresh);angle.trace_add("write",draw);canvas.bind("<Configure>",draw)
+        scale=min(w/1.02,(h-32)/2.05)*zoom.get()
+        for _,key,side,light,points in scene(yaw.get(),pitch.get(),layer.get(),selected() if isolate.get() else None):
+            coords=[v for x,y,z in points for v in (w/2+x*scale,(h-20)/2+y*scale)]
+            item=canvas.create_polygon(*coords,fill=color(key,light),outline="")
+            if key:state["items"][item]=(key,side)
+        canvas.create_text(w/2,h-12,text=f"{yaw.get():.0f}° / tilt {pitch.get():.0f}° · schematic",fill="#9db2ca")
+    def schedule(*_):
+        if not state["pending"]:
+            state["pending"]=True
+            canvas.after_idle(draw)
+    def show(*_):
+        k=selected();group,name,description=REGIONS[k]
+        report=state["reports"].get(k)
+        if report is None:
+            summary="Unlock Physique to see training history."
+            from .physique_body_detail import region_history
+            report=region_history([],k,int(period.get()))
+        else:
+            summary=(f"{period.get()} days: {report['primary']} primary / {report['secondary']} secondary sets"
+                     f" • {report['sessions']} training dates\nLast recognized exposure: {report['last_date'] or 'none'}"
+                     f" • Unclassified sets: {report['unclassified']}")
+        info.set(name+" · "+group.replace("_"," ")+"\n"+description+"\n\n"+summary)
+        ht.delete(*ht.get_children());et.delete(*et.get_children())
+        for row in report["rows"]:ht.insert("","end",values=row)
+        for k,title in (("primary_exercises","Primary"),("secondary_exercises","Secondary")):
+            for ex in report[k]:et.insert("","end",values=(ex,title))
+        legend.set("Drag to rotate • click a region • wheel to zoom" if mode.get()=="Anatomy" else
+                   "Heatmap: gray = no mapped sets; amber = highest relative count; teal = selection" if state["unlocked"] else "Unlock to view heatmap")
+        schedule()
+    def recompute(*_):
+        state["reports"]=body_counts(state["sets"],int(period.get())) if state["unlocked"] else {}
+        show()
+    def press(event):
+        state["drag"]=(event.x,event.y,yaw.get(),pitch.get())
+    def motion(event):
+        d=state["drag"]
+        if d:
+            yaw.set((d[2]+(event.x-d[0])*.65)%360)
+            pitch.set(max(-35,min(35,d[3]+(event.y-d[1])*.35)))
+    def release(event):
+        d=state["drag"];state["drag"]=None
+        if d and abs(event.x-d[0])+abs(event.y-d[1])<5:
+            for item in reversed(canvas.find_overlapping(event.x,event.y,event.x,event.y)):
+                if item in state["items"]:
+                    key,_=state["items"][item];region.set(REGIONS[key][1]);break
+    def wheel(event):
+        direction=1 if getattr(event,"delta",0)>0 or getattr(event,"num",0)==4 else -1
+        zoom.set(max(.65,min(1.8,zoom.get()+direction*.1)))
+    canvas.bind("<ButtonPress-1>",press);canvas.bind("<B1-Motion>",motion);canvas.bind("<ButtonRelease-1>",release)
+    canvas.bind("<MouseWheel>",wheel);canvas.bind("<Button-4>",wheel);canvas.bind("<Button-5>",wheel)
+    canvas.bind("<Configure>",schedule)
+    for var in (yaw,pitch,zoom,layer,isolate):var.trace_add("write",schedule)
+    for var in (region,mode):var.trace_add("write",show)
+    period.trace_add("write",recompute)
     def load(rows):
         state["sets"]=list(rows) if rows is not None else []
         state["unlocked"]=rows is not None
-        refresh()
-    refresh()
+        recompute()
+    recompute()
     return load

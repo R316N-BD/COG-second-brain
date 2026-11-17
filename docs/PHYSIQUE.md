@@ -1,4 +1,4 @@
-# COG Physique — local bodybuilding workspace
+# COG Physique 2.0 — local bodybuilding workspace
 
 This optional Nexus division uses Hermes-first design but introduces no second runtime.
 The current MVP is owner-operated; Hermes, MCP, general memory, cloud models and
@@ -24,6 +24,19 @@ review the last 7 days versus the preceding 7 days, including sample counts.
 Missing values are not treated as zero. Replace and delete are explicit operations.
 The module is single-owner, not a multi-athlete service.
 
+## Native 2.0 workspace
+- Command: contest countdown, 7-day means, 30-day weight chart and period comparisons.
+- Check-ins: add, explicitly replace, and delete daily records.
+- Training log: date, exercise, reps, external load in kg, optional RPE, weekly sets/session dates and load-volume (reps × external load; not a physiological workload score).
+- Personal bests: heaviest recorded set per exercise, ties resolved by reps; not estimated 1RM.
+- Prep planner: owner-entered contest date and milestones, completion toggles and overdue count.
+- Privacy: display lock clears charts, tables and input fields; no background agent access.
+
+Version 1 ciphertext is read and migrated in memory; the next successful write saves the v2 schema. Back up the encrypted file first. Version 1 software cannot read migrated v2 records. The desktop uses kg; the browser preview is illustrative.
+
+## Tests
+`python -m unittest discover -s tests -p 'test_physique*.py' -v` after installing the optional dependency. GUI rendering and OS-level security need manual testing.
+
 ## Privacy
 Records live outside the framework checkout at `physique/records.enc` under the
 configured COG data directory. Scrypt derives a key; AES-256-GCM authenticates and
@@ -37,12 +50,11 @@ The module is not clinically validated, independently audited, HIPAA-certified,
 multi-tenant, or resistant to a compromised local machine. Summary output is
 visible to the owner; avoid sharing terminal output or screenshots.
 
-No patient identifiers, clinical documents, photos, compound/dose logs, free text,
-or medical records are accepted in this first version. Never commit real athlete
+No clinical documents, photos, compound/dose logs or medical records are supported. Exercise and milestone labels accept short text; avoid identifying or sensitive information. Never commit real athlete
 data. The general COG index and MCP should not ingest this directory.
 
 ## Next phases (not implemented)
-- Training set/exercise log and nutrition adherence, with opt-in data import.
+- Detailed nutrition history and opt-in data import.
 - Coach Brain: approved methodology with cited evidence, review before sharing,
   prompt-injection controls, explicit scoped retrieval and no implicit cloud calls.
 - Research agent: sources, publication date, evidence type and limitations.

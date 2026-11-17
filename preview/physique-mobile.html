@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>COG Physique | Athlete snapshot</title><style>
+:root{color-scheme:dark;background:#090e18;color:#e5eef9;font:16px system-ui}*{box-sizing:border-box}body{margin:0}main{max-width:760px;margin:auto;padding:20px}header{border-bottom:1px solid #263b4d;padding-bottom:16px}h1{margin:0;font-size:24px;letter-spacing:.05em}h2{font-size:17px}p{color:#9db2ca;line-height:1.5}button,input{font:inherit;padding:12px;border:1px solid #36526a;border-radius:9px;color:inherit;background:#142336}button{cursor:pointer;color:#36ddc7}input{width:100%;margin:8px 0}.bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.card{padding:16px;background:#142336;border:1px solid #263b4d;border-radius:12px;margin:12px 0}.metric{color:#36ddc7;font-size:24px;font-weight:bold}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid .card{margin:0}small{color:#9db2ca}article{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}.list{max-height:65vh;overflow:auto}section[hidden]{display:none}#error{color:#ffb4a9}.active{border-color:#36ddc7}
+</style></head><body><main><header><h1>COG / PHYSIQUE</h1><p>Mobile Athlete Command · encrypted, read-only snapshot</p></header>
+<section id="locked"><h2>Unlock your snapshot</h2><p>This file has no network connection or synchronization. Use the separate mobile export passphrase. Open only a trusted, unmodified copy generated on your PC.</p>
+<label for="pw">Passphrase</label><input id="pw" type="password" autocomplete="off"><button id="unlock">Unlock</button><p id="error" role="alert"></p></section>
+<section id="dashboard" hidden><p id="stamp"></p><div class="bar"><button id="lock">Lock</button></div><nav class="bar" id="nav"></nav><div id="view"></div></section>
+<noscript>This snapshot requires local JavaScript and Web Crypto.</noscript>
+<script>
+"use strict";
+const encrypted="__COG_ENCRYPTED_PAYLOAD__";
+const $=id=>document.getElementById(id), enc=new TextEncoder();
+let data=null, selected="Overview", generation=0;
+const tabs=["Overview","Check-ins","Training","Prep","Feedback"];
+function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=String(text);if(cls)node.className=cls;return node}
+function card(parent,title,lines){const box=el("div",undefined,"card");box.append(el("h2",title));for(const line of lines)box.append(el("article",line));parent.append(box)}
+function metric(parent,title,value){const box=el("div",undefined,"card");box.append(el("small",title),el("div",value,"metric"));parent.append(box)}
+function fmt(x){return x===null||x===undefined?"—":String(x)}
+function show(tab){
+ if(!data)return; selected=tab;const root=$("view");root.replaceChildren();for(const b of $("nav").children)b.classList.toggle("active",b.textContent===tab);
+ if(tab==="Overview"){const grid=el("div",undefined,"grid");metric(grid,"Logged sets",data.sets.length);metric(grid,"Check-ins",data.records.length);metric(grid,"Contest target",fmt(data.target_date));metric(grid,"Reviewed reports",data.feedback.length);root.append(grid);const r=data.records[0];if(r)card(root,"Latest check-in · "+r.date,["Weight: "+fmt(r.weight_kg)+" kg","Sleep: "+fmt(r.sleep_hours)+" h","Training: "+fmt(r.training_minutes)+" min","Adherence: "+fmt(r.adherence_pct)+"%"]);return}
+ const list=el("div",undefined,"list");root.append(list);
+ if(tab==="Check-ins")for(const r of data.records)card(list,r.date,["Weight: "+fmt(r.weight_kg)+" kg","Sleep: "+fmt(r.sleep_hours)+" h","Training: "+fmt(r.training_minutes)+" min","Adherence: "+fmt(r.adherence_pct)+"%"]);
+ if(tab==="Training")for(const r of data.sets)card(list,r.date+" · "+r.exercise,[r.reps+" reps × "+r.weight_kg+" kg","RPE: "+fmt(r.rpe)]);
+ if(tab==="Prep")for(const r of data.milestones)card(list,r.date+" · "+r.title,[r.done?"Complete":"Open"]);
+ if(tab==="Feedback")for(const r of data.feedback)card(list,r.role,["Human-reviewed draft (not clinical approval)",r.feedback,"Review note: "+r.review_note]);
+ if(!list.children.length)list.append(el("p","No records included in this snapshot."));
+}
+function lock(){generation++;data=null;$("view").replaceChildren();$("nav").replaceChildren();$("stamp").textContent="";$("pw").value="";$("dashboard").hidden=true;$("locked").hidden=false;$("error").textContent="";$("unlock").disabled=false}
+async function unlock(){
+ const ticket=++generation;let pass=$("pw").value;$("pw").value="";$("error").textContent="";$("unlock").disabled=true;
+ try{
+  if(!globalThis.crypto?.subtle)throw Error("Web Crypto unavailable");
+  if(pass.length<12||pass.length>1024)throw Error("Invalid passphrase");
+  const blob=Uint8Array.from(atob(encrypted),c=>c.charCodeAt(0));if(blob.length<44||blob.length>1500100)throw Error("Invalid snapshot");
+  const material=await crypto.subtle.importKey("raw",enc.encode(pass),"PBKDF2",false,["deriveKey"]);pass="";
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:blob.slice(0,16),iterations:600000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const clear=await crypto.subtle.decrypt({name:"AES-GCM",iv:blob.slice(16,28),additionalData:enc.encode("cog-physique-mobile-v1")},key,blob.slice(28));
+  const parsed=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(clear));
+  if(parsed.version!==1||!["records","sets","milestones","feedback"].every(k=>Array.isArray(parsed[k])))throw Error("Invalid schema");
+  if(ticket!==generation)return;data=parsed;$("stamp").textContent="Exported "+data.exported+" · "+data.period_days+" days of history · not live";$("locked").hidden=true;$("dashboard").hidden=false;
+  $("nav").replaceChildren();for(const tab of tabs){const b=el("button",tab);b.addEventListener("click",()=>show(tab));$("nav").append(b)}show("Overview");
+ }catch(e){if(ticket===generation)$("error").textContent="Unable to unlock. Check passphrase, file integrity, and browser support for local Web Crypto."}
+ finally{pass="";if(ticket===generation)$("unlock").disabled=false}
+}
+$("unlock").addEventListener("click",unlock);$("lock").addEventListener("click",lock);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)lock()});window.addEventListener("pagehide",lock);
+</script></main></body></html>

@@ -26,6 +26,23 @@ PRESETS={
  "Vastus medialis":("FMA38932","FMA38933"),
  "Vastus intermedius":("FMA38934","FMA38935"),
  "Biceps femoris":("FMA45888","FMA45889","FMA45891","FMA45892"),
+ "Upper trapezius":("FMA33586","FMA33587"),
+ "Middle trapezius":("FMA33584","FMA33585"),
+ "Lower trapezius":("FMA33581","FMA33583"),
+ "Rhomboids":("FMA13381","FMA13382","FMA13383","FMA13384"),
+ "Serratus anterior":("FMA13398","FMA13399"),
+ "External obliques":("FMA13336","FMA13337"),
+ "Gluteus maximus":("FMA22328","FMA22329"),
+ "Gluteus medius":("FMA22330","FMA22331"),
+ "Gluteus minimus":("FMA22332","FMA22333"),
+ "Medial hamstrings":("FMA22358","FMA22359","FMA22448","FMA22449"),
+ "Hip adductors":("FMA22452","FMA22454","FMA22456","FMA22457","FMA22459","FMA22460"),
+ "Gastrocnemius":("FMA45957","FMA45958","FMA45960","FMA45961"),
+ "Soleus":("FMA22558","FMA22559"),
+ "Tibialis anterior":("FMA22544","FMA22545"),
+ "Scapula and humerus":("FMA13395","FMA13396","FMA23130","FMA23131"),
+ "Knee bones":("FMA24474","FMA24475","FMA24477","FMA24478","FMA24486","FMA24487"),
+ "Forearm bones":("FMA23464","FMA23465","FMA23467","FMA23468"),
 }
 MAX_META=8_000_000
 MAX_MEMBER=12_000_000

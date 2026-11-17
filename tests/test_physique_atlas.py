@@ -16,10 +16,10 @@ class AtlasTests(unittest.TestCase):
     def test_import_and_fit(self):
         with tempfile.TemporaryDirectory() as folder:
             p=Path(folder);m=p/"isa_element_parts.txt";z=p/"test.zip"
-            m.write_text("concept id\tname\telement file id\nFMA34690\tTest right\tFJ1\nFMA34691\tTest left\tFJ2\n",encoding="utf-8")
+            m.write_text("concept id\tname\telement file id\nFMA34690\tTest right\tFJ1\nFMA34691\tTest left\tFJ1M\n",encoding="utf-8")
             with zipfile.ZipFile(z,"w") as f:
                 f.writestr("nested/FJ1.obj",OBJ)
-                f.writestr("FJ2.obj",OBJ)
+                f.writestr("FJ1M.obj",OBJ)
                 f.writestr("../../unused.txt","ignored")
             result=load_region(z,m,PRESETS["Upper pectorals"])
             self.assertEqual(result["triangle_count"],4)
